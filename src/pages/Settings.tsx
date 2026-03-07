@@ -13,11 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings as SettingsIcon, Store, ShoppingCart, Search, Shield, Layers } from "lucide-react";
+import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ComplianceRuleEditor } from "@/components/compliance/ComplianceRuleEditor";
 
 export default function Settings() {
   return (
