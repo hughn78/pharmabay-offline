@@ -20,7 +20,7 @@ export const COMPARE_FIELDS: CompareFieldDef[] = [
   { key: "inventory", label: "Inventory Qty", localKey: "stock_on_hand", shopifyPath: "_firstVariantInventoryQty", isNumber: true },
 ];
 
-export type CompareField = typeof COMPARE_FIELDS[number];
+export type CompareField = CompareFieldDef;
 
 export type FieldDiff = {
   field: CompareField;
