@@ -262,8 +262,63 @@ function ImagesTab({ images, productId }: { images: any[]; productId: string }) 
   return <UniversalImageIntake images={images} productId={productId} />;
 }
 function EbayTab({ product, draft }: { product: any; draft: any }) {
-  const title = draft?.title || "";
-  const charCount = title.length;
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({
+    title: draft?.title || "",
+    subtitle: draft?.subtitle || "",
+    category_id: draft?.category_id || "",
+    epid: draft?.epid || "",
+    mpn: draft?.mpn || "",
+    buy_it_now_price: draft?.buy_it_now_price || "",
+    description_html: draft?.description_html || "",
+  });
+
+  const handleChange = (field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const charCount = form.title.length;
+
+  const saveDraft = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        ...form,
+        buy_it_now_price: form.buy_it_now_price ? Number(form.buy_it_now_price) : null,
+        product_id: product.id,
+        updated_at: new Date().toISOString(),
+      };
+      if (draft?.id) {
+        const { error } = await supabase.from("ebay_drafts").update(payload).eq("id", draft.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("ebay_drafts").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ebay-draft", product.id] });
+      toast.success("eBay draft saved");
+    },
+    onError: (err) => toast.error("Save failed", { description: String(err) }),
+  });
+
+  const markReady = useMutation({
+    mutationFn: async () => {
+      if (!draft?.id) {
+        throw new Error("Save the draft first before marking ready");
+      }
+      const { error } = await supabase
+        .from("ebay_drafts")
+        .update({ channel_status: "ready", updated_at: new Date().toISOString() })
+        .eq("id", draft.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ebay-draft", product.id] });
+      toast.success("Marked as ready");
+    },
+    onError: (err) => toast.error("Failed", { description: String(err) }),
+  });
 
   return (
     <Card>
@@ -281,19 +336,19 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
               {charCount}/80
             </span>
           </div>
-          <Input defaultValue={title} placeholder="Brand + Product + Strength + Form + Pack Size" />
+          <Input value={form.title} onChange={(e) => handleChange("title", e.target.value)} placeholder="Brand + Product + Strength + Form + Pack Size" />
         </div>
 
-        <FormField label="Subtitle" value={draft?.subtitle || ""} onChange={() => {}} />
-        <FormField label="Category ID" value={draft?.category_id || ""} onChange={() => {}} />
-        <FormField label="ePID" value={draft?.epid || ""} onChange={() => {}} />
-        <FormField label="MPN" value={draft?.mpn || ""} onChange={() => {}} />
-        <FormField label="Buy It Now Price" value={draft?.buy_it_now_price || ""} onChange={() => {}} type="number" />
+        <FormField label="Subtitle" value={form.subtitle} onChange={(v) => handleChange("subtitle", v)} />
+        <FormField label="Category ID" value={form.category_id} onChange={(v) => handleChange("category_id", v)} />
+        <FormField label="ePID" value={form.epid} onChange={(v) => handleChange("epid", v)} />
+        <FormField label="MPN" value={form.mpn} onChange={(v) => handleChange("mpn", v)} />
+        <FormField label="Buy It Now Price" value={form.buy_it_now_price} onChange={(v) => handleChange("buy_it_now_price", v)} type="number" />
 
         <EbayPricingPanel
           costPrice={Number(product.cost_price || 0)}
           rrp={Number(product.sell_price || 0)}
-          ebayPrice={Number(draft?.buy_it_now_price || draft?.start_price || 0)}
+          ebayPrice={Number(form.buy_it_now_price || 0)}
           compMedian={null}
           defaultMarkup={30}
           minMargin={15}
@@ -301,14 +356,18 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
 
         <div className="space-y-1.5">
           <Label className="text-sm">Description (HTML)</Label>
-          <Textarea defaultValue={draft?.description_html || ""} rows={6} placeholder="Product description..." />
+          <Textarea value={form.description_html} onChange={(e) => handleChange("description_html", e.target.value)} rows={6} placeholder="Product description..." />
         </div>
 
         <AiDescriptionGenerator productId={product.id} target="ebay" />
 
         <div className="flex gap-2">
-          <Button>Save eBay Draft</Button>
-          <Button variant="outline">Mark Ready</Button>
+          <Button onClick={() => saveDraft.mutate()} disabled={saveDraft.isPending}>
+            <Save className="h-4 w-4 mr-2" /> Save eBay Draft
+          </Button>
+          <Button variant="outline" onClick={() => markReady.mutate()} disabled={markReady.isPending}>
+            Mark Ready
+          </Button>
         </div>
       </CardContent>
     </Card>
