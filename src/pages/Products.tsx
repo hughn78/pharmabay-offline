@@ -20,12 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, Filter, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Package, Search, Filter, MoreHorizontal, RefreshCw, Download } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
 import { fullComplianceCheck } from "@/lib/compliance-engine";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import Papa from "papaparse";
 
 export default function Products() {
   const navigate = useNavigate();
@@ -112,6 +113,83 @@ export default function Products() {
     }
   };
 
+  const handleMarkChannelReady = async (channel: "ebay" | "shopify") => {
+    const selected = products.filter((p: any) => selectedIds.has(p.id));
+    if (selected.length === 0) return;
+
+    try {
+      let count = 0;
+
+      for (const p of selected) {
+        if (channel === "ebay") {
+          const { data: existing } = await supabase.from("ebay_drafts").select("id").eq("product_id", p.id).maybeSingle();
+          const draft = {
+            product_id: p.id,
+            title: (p.source_product_name || "").substring(0, 80),
+            brand: p.brand,
+            ean: p.barcode,
+            channel_status: "ready",
+            start_price: p.sell_price,
+            quantity: p.quantity_available_for_ebay ?? Math.max(0, Number(p.stock_on_hand) || 0),
+          };
+          if (existing) {
+            await supabase.from("ebay_drafts").update(draft).eq("id", existing.id);
+          } else {
+            await supabase.from("ebay_drafts").insert(draft);
+          }
+        } else {
+          const { data: existing } = await supabase.from("shopify_drafts").select("id").eq("product_id", p.id).maybeSingle();
+          const draft = {
+            product_id: p.id,
+            title: p.source_product_name,
+            vendor: p.brand,
+            product_type: p.product_type || p.z_category,
+            channel_status: "ready",
+            status: "draft",
+          };
+          if (existing) {
+            await supabase.from("shopify_drafts").update(draft).eq("id", existing.id);
+          } else {
+            await supabase.from("shopify_drafts").insert(draft);
+          }
+        }
+        count++;
+      }
+
+      toast.success(`${count} products marked as ${channel === "ebay" ? "eBay" : "Shopify"} ready`);
+      queryClient.invalidateQueries({ queryKey: [channel === "ebay" ? "ebay-draft" : "shopify-draft"] });
+    } catch (err: any) {
+      toast.error(`Failed: ${err.message}`);
+    }
+  };
+
+  const handleExportCsv = () => {
+    const selected = products.filter((p: any) => selectedIds.has(p.id));
+    if (selected.length === 0) return;
+
+    const rows = selected.map((p: any) => ({
+      product_name: p.source_product_name,
+      barcode: p.barcode,
+      sku: p.sku,
+      brand: p.brand,
+      stock_on_hand: p.stock_on_hand,
+      cost_price: p.cost_price,
+      sell_price: p.sell_price,
+      compliance_status: p.compliance_status,
+      enrichment_status: p.enrichment_status,
+    }));
+
+    const csv = Papa.unparse(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `products-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${selected.length} products to CSV`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -126,9 +204,12 @@ export default function Products() {
           </Button>
           {selectedIds.size > 0 && (
             <>
-              <Button size="sm" variant="secondary">Mark eBay Ready</Button>
-              <Button size="sm" variant="secondary">Mark Shopify Ready</Button>
-              <Button size="sm" variant="secondary">Export CSV</Button>
+              <Button size="sm" variant="secondary" onClick={() => handleMarkChannelReady("ebay")}>Mark eBay Ready</Button>
+              <Button size="sm" variant="secondary" onClick={() => handleMarkChannelReady("shopify")}>Mark Shopify Ready</Button>
+              <Button size="sm" variant="secondary" onClick={handleExportCsv}>
+                <Download className="h-3.5 w-3.5 mr-1" />
+                Export CSV
+              </Button>
             </>
           )}
         </div>
