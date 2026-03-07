@@ -8,6 +8,7 @@ import {
   Settings,
   FileText,
   LogOut,
+  ArrowLeftRight,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -32,6 +33,7 @@ const navItems = [
   { title: "Exports", url: "/exports", icon: Download },
   { title: "Import Stock", url: "/import", icon: Upload },
   { title: "Channel Sync", url: "/sync", icon: RefreshCw },
+  { title: "Reconciliation", url: "/reconciliation", icon: ArrowLeftRight },
   { title: "Settings", url: "/settings", icon: Settings },
   { title: "Audit Log", url: "/audit", icon: FileText },
 ];
