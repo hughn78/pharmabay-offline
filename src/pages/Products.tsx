@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, Filter, MoreHorizontal, RefreshCw, Download } from "lucide-react";
+import { Package, Search, RefreshCw, Download } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
+import { LiveStatusBadges } from "@/components/products/LiveStatusBadges";
 import { fullComplianceCheck } from "@/lib/compliance-engine";
 import { buildSafeIlikeOr } from "@/lib/search-utils";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useProductLiveStatus } from "@/hooks/useProductLiveStatus";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,7 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   const [complianceFilter, setComplianceFilter] = useState("all");
+  const [channelFilter, setChannelFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRunningCompliance, setIsRunningCompliance] = useState(false);
   const queryClient = useQueryClient();
@@ -100,6 +103,19 @@ export default function Products() {
     },
   });
 
+  // Get live status for all loaded products
+  const productIds = products.map((p: any) => p.id);
+  const { ebayMap, shopifyMap } = useProductLiveStatus(productIds);
+
+  // Apply channel filter client-side after fetching live status
+  const filteredProducts = products.filter((p: any) => {
+    if (channelFilter === "all") return true;
+    if (channelFilter === "live_ebay") return ebayMap.has(p.id);
+    if (channelFilter === "live_shopify") return shopifyMap.has(p.id);
+    if (channelFilter === "not_live") return !ebayMap.has(p.id) && !shopifyMap.has(p.id);
+    return true;
+  });
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -109,10 +125,10 @@ export default function Products() {
   };
 
   const toggleAll = () => {
-    if (selectedIds.size === products.length) {
+    if (selectedIds.size === filteredProducts.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(products.map((p: any) => p.id)));
+      setSelectedIds(new Set(filteredProducts.map((p: any) => p.id)));
     }
   };
 
@@ -122,17 +138,10 @@ export default function Products() {
 
     try {
       let count = 0;
-
       for (const p of selected) {
         if (channel === "ebay") {
-          const { data: existing, error: existingError } = await supabase
-            .from("ebay_drafts")
-            .select("id")
-            .eq("product_id", p.id)
-            .limit(1)
-            .maybeSingle();
-          if (existingError) throw existingError;
-
+          const { data: existing } = await supabase
+            .from("ebay_drafts").select("id").eq("product_id", p.id).limit(1).maybeSingle();
           const draft = {
             product_id: p.id,
             title: (p.source_product_name || "").substring(0, 80),
@@ -142,23 +151,14 @@ export default function Products() {
             start_price: p.sell_price,
             quantity: p.quantity_available_for_ebay ?? Math.max(0, Number(p.stock_on_hand) || 0),
           };
-
           if (existing) {
-            const { error: updateError } = await supabase.from("ebay_drafts").update(draft).eq("id", existing.id);
-            if (updateError) throw updateError;
+            await supabase.from("ebay_drafts").update(draft).eq("id", existing.id);
           } else {
-            const { error: insertError } = await supabase.from("ebay_drafts").insert(draft);
-            if (insertError) throw insertError;
+            await supabase.from("ebay_drafts").insert(draft);
           }
         } else {
-          const { data: existing, error: existingError } = await supabase
-            .from("shopify_drafts")
-            .select("id")
-            .eq("product_id", p.id)
-            .limit(1)
-            .maybeSingle();
-          if (existingError) throw existingError;
-
+          const { data: existing } = await supabase
+            .from("shopify_drafts").select("id").eq("product_id", p.id).limit(1).maybeSingle();
           const draft = {
             product_id: p.id,
             title: p.source_product_name,
@@ -168,11 +168,9 @@ export default function Products() {
             status: "draft",
           };
           if (existing) {
-            const { error: updateError } = await supabase.from("shopify_drafts").update(draft).eq("id", existing.id);
-            if (updateError) throw updateError;
+            await supabase.from("shopify_drafts").update(draft).eq("id", existing.id);
           } else {
-            const { error: insertError } = await supabase.from("shopify_drafts").insert(draft);
-            if (insertError) throw insertError;
+            await supabase.from("shopify_drafts").insert(draft);
           }
         }
         count++;
@@ -265,6 +263,17 @@ export default function Products() {
                 <SelectItem value="blocked">Blocked</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={channelFilter} onValueChange={setChannelFilter}>
+              <SelectTrigger className="w-[170px]">
+                <SelectValue placeholder="Channel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Channels</SelectItem>
+                <SelectItem value="live_ebay">Live on eBay</SelectItem>
+                <SelectItem value="live_shopify">Live on Shopify</SelectItem>
+                <SelectItem value="not_live">Not Live</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -278,7 +287,7 @@ export default function Products() {
                 <TableRow>
                   <TableHead className="w-10">
                     <Checkbox
-                      checked={selectedIds.size === products.length && products.length > 0}
+                      checked={selectedIds.size === filteredProducts.length && filteredProducts.length > 0}
                       onCheckedChange={toggleAll}
                     />
                   </TableHead>
@@ -288,6 +297,7 @@ export default function Products() {
                   <TableHead>Stock</TableHead>
                   <TableHead>Cost</TableHead>
                   <TableHead>RRP</TableHead>
+                  <TableHead>Live</TableHead>
                   <TableHead>Compliance</TableHead>
                   <TableHead>Enrichment</TableHead>
                 </TableRow>
@@ -295,19 +305,19 @@ export default function Products() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                       Loading products...
                     </TableCell>
                   </TableRow>
-                ) : products.length === 0 ? (
+                ) : filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                       <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       No products found. Import stock data to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  products.map((p: any) => (
+                  filteredProducts.map((p: any) => (
                     <TableRow
                       key={p.id}
                       className="cursor-pointer hover:bg-muted/30"
@@ -327,6 +337,12 @@ export default function Products() {
                       <TableCell>{p.stock_on_hand ?? "—"}</TableCell>
                       <TableCell>{p.cost_price ? `$${Number(p.cost_price).toFixed(2)}` : "—"}</TableCell>
                       <TableCell>{p.sell_price ? `$${Number(p.sell_price).toFixed(2)}` : "—"}</TableCell>
+                      <TableCell>
+                        <LiveStatusBadges
+                          ebayLive={ebayMap.get(p.id)}
+                          shopifyLive={shopifyMap.get(p.id)}
+                        />
+                      </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <ComplianceBadgeWithOverride
                           productId={p.id}
@@ -346,16 +362,6 @@ export default function Products() {
       </Card>
     </div>
   );
-}
-
-function ComplianceBadge({ status }: { status?: string }) {
-  if (!status) return <Badge variant="outline" className="text-[10px]">Unknown</Badge>;
-  const styles: Record<string, string> = {
-    permitted: "status-permitted",
-    review_required: "status-review",
-    blocked: "status-blocked",
-  };
-  return <Badge className={`text-[10px] ${styles[status] || ""}`}>{status.replace("_", " ")}</Badge>;
 }
 
 function EnrichmentBadge({ status }: { status?: string }) {
