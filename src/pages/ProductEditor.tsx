@@ -26,6 +26,7 @@ import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel";
+import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
 
 export default function ProductEditor() {
   const { id } = useParams();
@@ -510,21 +511,26 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
   });
 
   return (
-    <Card>
-      <CardContent className="pt-6 space-y-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant={draft?.channel_status === "ready" ? "default" : "outline"}>
-            {draft?.channel_status || "No Draft"}
-          </Badge>
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm">eBay Title</Label>
-            <span className={`text-xs ${charCount > 80 ? "text-destructive" : "text-muted-foreground"}`}>
-              {charCount}/80
-            </span>
+    <div className="space-y-4">
+      <LiveOnlineStateCard productId={product.id} channel="ebay" />
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant={draft?.channel_status === "ready" ? "default" : "outline"}>
+              {draft?.channel_status || "No Draft"}
+            </Badge>
+            {draft?.published_listing_id && (
+              <Badge variant="outline" className="text-[10px] font-mono">Item# {draft.published_listing_id}</Badge>
+            )}
           </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">eBay Title</Label>
+              <span className={`text-xs ${charCount > 80 ? "text-destructive" : "text-muted-foreground"}`}>
+                {charCount}/80
+              </span>
+            </div>
           <Input value={form.title} onChange={(e) => handleChange("title", e.target.value)} placeholder="Brand + Product + Strength + Form + Pack Size" />
         </div>
 
@@ -560,6 +566,7 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }
 
@@ -616,18 +623,20 @@ function ShopifyTab({ product, draft }: { product: any; draft: any }) {
   });
 
   return (
-    <Card>
-      <CardContent className="pt-6 space-y-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant={draft?.channel_status === "ready" ? "default" : "outline"}>
-            {draft?.channel_status || "No Draft"}
-          </Badge>
-          {draft?.shopify_product_gid && (
-            <Badge variant="outline" className="font-mono text-[10px]">{draft.shopify_product_gid}</Badge>
-          )}
-        </div>
+    <div className="space-y-4">
+      <LiveOnlineStateCard productId={product.id} channel="shopify" />
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant={draft?.channel_status === "ready" ? "default" : "outline"}>
+              {draft?.channel_status || "No Draft"}
+            </Badge>
+            {draft?.shopify_product_gid && (
+              <Badge variant="outline" className="font-mono text-[10px]">{draft.shopify_product_gid}</Badge>
+            )}
+          </div>
 
-        <FormField label="Title" value={form.title} onChange={(v) => handleChange("title", v)} />
+          <FormField label="Title" value={form.title} onChange={(v) => handleChange("title", v)} />
         <FormField label="Handle" value={form.handle} onChange={(v) => handleChange("handle", v)} />
         <FormField label="Vendor" value={form.vendor} onChange={(v) => handleChange("vendor", v)} />
         <FormField label="Product Type" value={form.product_type} onChange={(v) => handleChange("product_type", v)} />
@@ -659,6 +668,7 @@ function ShopifyTab({ product, draft }: { product: any; draft: any }) {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }
 

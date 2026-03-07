@@ -11,6 +11,8 @@ import {
   AlertTriangle, CheckCircle, XCircle, Download, ShoppingCart, Store, Trash2,
 } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
+import { LiveStatusBadges } from "@/components/products/LiveStatusBadges";
+import { useProductLiveStatus } from "@/hooks/useProductLiveStatus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -327,6 +329,13 @@ export default function ReviewQueue() {
   const blockedCount = reviewItems.filter((p: any) => p.compliance_status === "blocked").length;
   const reviewCount = reviewItems.filter((p: any) => p.compliance_status === "review_required").length;
 
+  // Collect all product IDs for live status lookup
+  const allProductIds = [
+    ...ebayDrafts.map((d: any) => d.product_id),
+    ...shopifyDrafts.map((d: any) => d.product_id),
+  ].filter(Boolean);
+  const { ebayMap, shopifyMap } = useProductLiveStatus(allProductIds);
+
   return (
     <div className="space-y-4">
       <div>
@@ -423,6 +432,8 @@ export default function ReviewQueue() {
                 onToggleAll={() => toggleAll(ebayDrafts, selectedEbay, setSelectedEbay)}
                 channel="ebay"
                 onNavigate={(productId) => navigate(`/products/${productId}`)}
+                ebayMap={ebayMap}
+                shopifyMap={shopifyMap}
               />
             </CardContent>
           </Card>
@@ -456,6 +467,8 @@ export default function ReviewQueue() {
                 onToggleAll={() => toggleAll(shopifyDrafts, selectedShopify, setSelectedShopify)}
                 channel="shopify"
                 onNavigate={(productId) => navigate(`/products/${productId}`)}
+                ebayMap={ebayMap}
+                shopifyMap={shopifyMap}
               />
             </CardContent>
           </Card>
@@ -518,7 +531,7 @@ export default function ReviewQueue() {
 }
 
 function ChannelTable({
-  items, isLoading, selectedIds, onToggle, onToggleAll, channel, onNavigate,
+  items, isLoading, selectedIds, onToggle, onToggleAll, channel, onNavigate, ebayMap, shopifyMap,
 }: {
   items: any[];
   isLoading: boolean;
@@ -527,6 +540,8 @@ function ChannelTable({
   onToggleAll: () => void;
   channel: "ebay" | "shopify";
   onNavigate: (productId: string) => void;
+  ebayMap: Map<string, any>;
+  shopifyMap: Map<string, any>;
 }) {
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
@@ -557,6 +572,7 @@ function ChannelTable({
             <TableHead>Brand</TableHead>
             <TableHead>Qty</TableHead>
             <TableHead>Price</TableHead>
+            <TableHead>Live</TableHead>
             <TableHead>Compliance</TableHead>
           </TableRow>
         </TableHeader>
@@ -585,6 +601,12 @@ function ChannelTable({
                   {channel === "ebay"
                     ? (d.start_price ? `$${Number(d.start_price).toFixed(2)}` : "—")
                     : (p.sell_price ? `$${Number(p.sell_price).toFixed(2)}` : "—")}
+                </TableCell>
+                <TableCell>
+                  <LiveStatusBadges
+                    ebayLive={d.product_id ? ebayMap.get(d.product_id) : undefined}
+                    shopifyLive={d.product_id ? shopifyMap.get(d.product_id) : undefined}
+                  />
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   {p.compliance_status ? (
