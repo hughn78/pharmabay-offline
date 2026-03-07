@@ -16,6 +16,7 @@ import AuditLog from "./pages/AuditLog";
 import ProductEditor from "./pages/ProductEditor";
 import ShopifyReconciliation from "./pages/ShopifyReconciliation";
 import ShopifyStockSync from "./pages/ShopifyStockSync";
+import ChannelListingImports from "./pages/ChannelListingImports";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
