@@ -133,58 +133,6 @@ function Field({ label, placeholder, type = "text" }: { label: string; placehold
   );
 }
 
-function ComplianceRules() {
-  const { data: rules = [] } = useQuery({
-    queryKey: ["compliance-rules"],
-    queryFn: async () => {
-      const { data } = await supabase.from("compliance_rules").select("*").order("priority");
-      return data || [];
-    },
-  });
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Shield className="h-4 w-4" /> Compliance Rules
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {rules.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No compliance rules configured. Add rules to auto-classify products.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Rule</TableHead>
-                <TableHead>Field</TableHead>
-                <TableHead>Match</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Active</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rules.map((r: any) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-medium text-sm">{r.rule_name}</TableCell>
-                  <TableCell className="text-sm">{r.match_field}</TableCell>
-                  <TableCell className="font-mono text-xs">{r.match_value}</TableCell>
-                  <TableCell>
-                    <Badge className={`text-[10px] ${r.action === "block" ? "status-blocked" : r.action === "review" ? "status-review" : "status-permitted"}`}>
-                      {r.action}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{r.is_active ? "✓" : "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 function CategoryMappings() {
   const { data: mappings = [] } = useQuery({
     queryKey: ["category-mappings"],

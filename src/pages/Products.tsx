@@ -24,7 +24,7 @@ import { Package, Search, Filter, MoreHorizontal, RefreshCw } from "lucide-react
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
 import { fullComplianceCheck } from "@/lib/compliance-engine";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Products() {

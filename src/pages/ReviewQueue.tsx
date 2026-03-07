@@ -97,14 +97,14 @@ export default function ReviewQueue() {
                       </div>
                     )}
                   </div>
-                  <Badge
-                    className={`text-[10px] shrink-0 ml-3 ${
-                      p.compliance_status === "blocked" ? "status-blocked" :
-                      p.compliance_status === "review_required" ? "status-review" : ""
-                    }`}
-                  >
-                    {p.compliance_status?.replace("_", " ") || "unknown"}
-                  </Badge>
+                  <div className="shrink-0 ml-3" onClick={(e) => e.stopPropagation()}>
+                    <ComplianceBadgeWithOverride
+                      productId={p.id}
+                      productName={p.source_product_name || ""}
+                      status={p.compliance_status}
+                      reasons={p.compliance_reasons as string[] | null}
+                    />
+                  </div>
                 </button>
               ))}
             </div>
