@@ -531,7 +531,7 @@ export default function ReviewQueue() {
 }
 
 function ChannelTable({
-  items, isLoading, selectedIds, onToggle, onToggleAll, channel, onNavigate,
+  items, isLoading, selectedIds, onToggle, onToggleAll, channel, onNavigate, ebayMap, shopifyMap,
 }: {
   items: any[];
   isLoading: boolean;
@@ -540,6 +540,8 @@ function ChannelTable({
   onToggleAll: () => void;
   channel: "ebay" | "shopify";
   onNavigate: (productId: string) => void;
+  ebayMap: Map<string, any>;
+  shopifyMap: Map<string, any>;
 }) {
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
