@@ -477,7 +477,8 @@ function matchProducts(
   reserveBuffer: number,
   syncMode: string,
   maxCap?: number | null,
-  syncZero?: boolean
+  syncZero?: boolean,
+  shopifyLocationId?: string
 ) {
   const items: any[] = [];
   const usedVariantGids = new Set<string>();
