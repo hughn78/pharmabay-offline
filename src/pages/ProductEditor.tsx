@@ -668,6 +668,7 @@ function ShopifyTab({ product, draft }: { product: any; draft: any }) {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }
 
