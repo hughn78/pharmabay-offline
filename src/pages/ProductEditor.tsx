@@ -284,30 +284,14 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
         <FormField label="MPN" value={draft?.mpn || ""} onChange={() => {}} />
         <FormField label="Buy It Now Price" value={draft?.buy_it_now_price || ""} onChange={() => {}} type="number" />
 
-        {/* Price comparison */}
-        <Card className="bg-muted/50">
-          <CardContent className="pt-4 pb-3">
-            <h4 className="text-xs font-medium mb-2">Pricing Comparison</h4>
-            <div className="grid grid-cols-4 gap-2 text-center text-xs">
-              <div>
-                <div className="text-muted-foreground">Cost</div>
-                <div className="font-medium">${Number(product.cost_price || 0).toFixed(2)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">RRP</div>
-                <div className="font-medium">${Number(product.sell_price || 0).toFixed(2)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">eBay Price</div>
-                <div className="font-medium">${Number(draft?.buy_it_now_price || 0).toFixed(2)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Margin</div>
-                <div className="font-medium">—</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <EbayPricingPanel
+          costPrice={Number(product.cost_price || 0)}
+          rrp={Number(product.sell_price || 0)}
+          ebayPrice={Number(draft?.buy_it_now_price || draft?.start_price || 0)}
+          compMedian={null}
+          defaultMarkup={30}
+          minMargin={15}
+        />
 
         <div className="space-y-1.5">
           <Label className="text-sm">Description (HTML)</Label>
