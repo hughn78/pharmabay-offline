@@ -588,6 +588,15 @@ export function UniversalImageIntake({ images, productId }: Props) {
           ))}
         </div>
       )}
+
+      {/* Page Image Extractor Modal */}
+      <PageImageExtractorModal
+        open={!!extractorUrl}
+        onOpenChange={(open) => !open && setExtractorUrl(null)}
+        pageUrl={extractorUrl || ""}
+        productId={productId}
+        existingImageCount={images.length}
+      />
     </div>
   );
 }
