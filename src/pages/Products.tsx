@@ -174,7 +174,14 @@ export default function Products() {
                       <TableCell>{p.stock_on_hand ?? "—"}</TableCell>
                       <TableCell>{p.cost_price ? `$${Number(p.cost_price).toFixed(2)}` : "—"}</TableCell>
                       <TableCell>{p.sell_price ? `$${Number(p.sell_price).toFixed(2)}` : "—"}</TableCell>
-                      <TableCell><ComplianceBadge status={p.compliance_status} /></TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <ComplianceBadgeWithOverride
+                          productId={p.id}
+                          productName={p.source_product_name || ""}
+                          status={p.compliance_status}
+                          reasons={p.compliance_reasons as string[] | null}
+                        />
+                      </TableCell>
                       <TableCell><EnrichmentBadge status={p.enrichment_status} /></TableCell>
                     </TableRow>
                   ))
