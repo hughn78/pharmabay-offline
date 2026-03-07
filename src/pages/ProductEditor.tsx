@@ -348,6 +348,8 @@ function ShopifyTab({ product, draft }: { product: any; draft: any }) {
         <h4 className="font-medium text-sm">Google Shopping</h4>
         <FormField label="Google Product Category" value={draft?.google_product_category || ""} onChange={() => {}} />
 
+        <AiDescriptionGenerator productId={product.id} target="shopify" />
+
         <div className="flex gap-2">
           <Button>Save Shopify Draft</Button>
           <Button variant="outline">Mark Ready</Button>
