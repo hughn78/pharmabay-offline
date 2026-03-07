@@ -375,6 +375,57 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
 }
 
 function ShopifyTab({ product, draft }: { product: any; draft: any }) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({
+    title: draft?.title || "",
+    handle: draft?.handle || "",
+    vendor: draft?.vendor || "",
+    product_type: draft?.product_type || "",
+    product_category: draft?.product_category || "",
+    description_html: draft?.description_html || "",
+    seo_title: draft?.seo_title || "",
+    seo_description: draft?.seo_description || "",
+    google_product_category: draft?.google_product_category || "",
+  });
+
+  const handleChange = (field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const saveDraft = useMutation({
+    mutationFn: async () => {
+      const payload = { ...form, product_id: product.id, updated_at: new Date().toISOString() };
+      if (draft?.id) {
+        const { error } = await supabase.from("shopify_drafts").update(payload).eq("id", draft.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("shopify_drafts").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shopify-draft", product.id] });
+      toast.success("Shopify draft saved");
+    },
+    onError: (err) => toast.error("Save failed", { description: String(err) }),
+  });
+
+  const markReady = useMutation({
+    mutationFn: async () => {
+      if (!draft?.id) throw new Error("Save the draft first");
+      const { error } = await supabase
+        .from("shopify_drafts")
+        .update({ channel_status: "ready", updated_at: new Date().toISOString() })
+        .eq("id", draft.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shopify-draft", product.id] });
+      toast.success("Marked as ready");
+    },
+    onError: (err) => toast.error("Failed", { description: String(err) }),
+  });
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -387,31 +438,35 @@ function ShopifyTab({ product, draft }: { product: any; draft: any }) {
           )}
         </div>
 
-        <FormField label="Title" value={draft?.title || ""} onChange={() => {}} />
-        <FormField label="Handle" value={draft?.handle || ""} onChange={() => {}} />
-        <FormField label="Vendor" value={draft?.vendor || ""} onChange={() => {}} />
-        <FormField label="Product Type" value={draft?.product_type || ""} onChange={() => {}} />
-        <FormField label="Product Category" value={draft?.product_category || ""} onChange={() => {}} />
+        <FormField label="Title" value={form.title} onChange={(v) => handleChange("title", v)} />
+        <FormField label="Handle" value={form.handle} onChange={(v) => handleChange("handle", v)} />
+        <FormField label="Vendor" value={form.vendor} onChange={(v) => handleChange("vendor", v)} />
+        <FormField label="Product Type" value={form.product_type} onChange={(v) => handleChange("product_type", v)} />
+        <FormField label="Product Category" value={form.product_category} onChange={(v) => handleChange("product_category", v)} />
 
         <div className="space-y-1.5">
           <Label className="text-sm">Description (HTML)</Label>
-          <Textarea defaultValue={draft?.description_html || ""} rows={4} />
+          <Textarea value={form.description_html} onChange={(e) => handleChange("description_html", e.target.value)} rows={4} />
         </div>
 
         <Separator />
         <h4 className="font-medium text-sm">SEO</h4>
-        <FormField label="SEO Title" value={draft?.seo_title || ""} onChange={() => {}} />
-        <FormField label="SEO Description" value={draft?.seo_description || ""} onChange={() => {}} />
+        <FormField label="SEO Title" value={form.seo_title} onChange={(v) => handleChange("seo_title", v)} />
+        <FormField label="SEO Description" value={form.seo_description} onChange={(v) => handleChange("seo_description", v)} />
 
         <Separator />
         <h4 className="font-medium text-sm">Google Shopping</h4>
-        <FormField label="Google Product Category" value={draft?.google_product_category || ""} onChange={() => {}} />
+        <FormField label="Google Product Category" value={form.google_product_category} onChange={(v) => handleChange("google_product_category", v)} />
 
         <AiDescriptionGenerator productId={product.id} target="shopify" />
 
         <div className="flex gap-2">
-          <Button>Save Shopify Draft</Button>
-          <Button variant="outline">Mark Ready</Button>
+          <Button onClick={() => saveDraft.mutate()} disabled={saveDraft.isPending}>
+            <Save className="h-4 w-4 mr-2" /> Save Shopify Draft
+          </Button>
+          <Button variant="outline" onClick={() => markReady.mutate()} disabled={markReady.isPending}>
+            Mark Ready
+          </Button>
         </div>
       </CardContent>
     </Card>
