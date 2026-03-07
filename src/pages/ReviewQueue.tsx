@@ -188,9 +188,9 @@ export default function ReviewQueue() {
         "", "", "", // Shipping 2
         "3", // DispatchTimeMax
         d.products?.sku || "", // CustomLabel
-        "ReturnsAccepted", // ReturnsAcceptedOption
-        "MoneyBack", // RefundOption
-        "Days_30", // ReturnsWithinOption
+        "ReturnsNotAccepted", // ReturnsAcceptedOption
+        "", // RefundOption
+        "", // ReturnsWithinOption
         "Buyer", // ShippingCostPaidByOption
         "", // AdditionalDetails
         "", "", "", // Profile names
