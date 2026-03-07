@@ -432,6 +432,8 @@ export default function ReviewQueue() {
                 onToggleAll={() => toggleAll(ebayDrafts, selectedEbay, setSelectedEbay)}
                 channel="ebay"
                 onNavigate={(productId) => navigate(`/products/${productId}`)}
+                ebayMap={ebayMap}
+                shopifyMap={shopifyMap}
               />
             </CardContent>
           </Card>
