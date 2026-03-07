@@ -228,7 +228,7 @@ function GeneralTab({ product, onSave }: { product: any; onSave: (u: any) => voi
 function EnrichmentTab({ product }: { product: any }) {
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-6 space-y-4">
         <div className="flex items-center gap-3 mb-4">
           <Badge variant={product.enrichment_status === "complete" ? "default" : "outline"}>
             {product.enrichment_status || "pending"}
@@ -243,6 +243,11 @@ function EnrichmentTab({ product }: { product: any }) {
         <p className="text-sm text-muted-foreground">
           Enrichment pipeline will search trusted sources to fill in product details, images, and category suggestions.
         </p>
+
+        <Separator />
+
+        <AiDescriptionGenerator productId={product.id} target="general" />
+
         {product.enrichment_summary && (
           <div className="mt-4 bg-muted rounded-lg p-4 text-sm">
             <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(product.enrichment_summary, null, 2)}</pre>
