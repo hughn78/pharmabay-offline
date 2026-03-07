@@ -122,7 +122,14 @@ export default function Products() {
 
       for (const p of selected) {
         if (channel === "ebay") {
-          const { data: existing } = await supabase.from("ebay_drafts").select("id").eq("product_id", p.id).maybeSingle();
+          const { data: existing, error: existingError } = await supabase
+            .from("ebay_drafts")
+            .select("id")
+            .eq("product_id", p.id)
+            .limit(1)
+            .maybeSingle();
+          if (existingError) throw existingError;
+
           const draft = {
             product_id: p.id,
             title: (p.source_product_name || "").substring(0, 80),
@@ -132,13 +139,23 @@ export default function Products() {
             start_price: p.sell_price,
             quantity: p.quantity_available_for_ebay ?? Math.max(0, Number(p.stock_on_hand) || 0),
           };
+
           if (existing) {
-            await supabase.from("ebay_drafts").update(draft).eq("id", existing.id);
+            const { error: updateError } = await supabase.from("ebay_drafts").update(draft).eq("id", existing.id);
+            if (updateError) throw updateError;
           } else {
-            await supabase.from("ebay_drafts").insert(draft);
+            const { error: insertError } = await supabase.from("ebay_drafts").insert(draft);
+            if (insertError) throw insertError;
           }
         } else {
-          const { data: existing } = await supabase.from("shopify_drafts").select("id").eq("product_id", p.id).maybeSingle();
+          const { data: existing, error: existingError } = await supabase
+            .from("shopify_drafts")
+            .select("id")
+            .eq("product_id", p.id)
+            .limit(1)
+            .maybeSingle();
+          if (existingError) throw existingError;
+
           const draft = {
             product_id: p.id,
             title: p.source_product_name,
@@ -148,9 +165,11 @@ export default function Products() {
             status: "draft",
           };
           if (existing) {
-            await supabase.from("shopify_drafts").update(draft).eq("id", existing.id);
+            const { error: updateError } = await supabase.from("shopify_drafts").update(draft).eq("id", existing.id);
+            if (updateError) throw updateError;
           } else {
-            await supabase.from("shopify_drafts").insert(draft);
+            const { error: insertError } = await supabase.from("shopify_drafts").insert(draft);
+            if (insertError) throw insertError;
           }
         }
         count++;

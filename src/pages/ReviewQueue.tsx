@@ -43,6 +43,39 @@ function downloadCsv(content: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+type DraftTable = "ebay_drafts" | "shopify_drafts";
+
+async function fetchQueuedDraftsWithProducts(table: DraftTable) {
+  const { data: drafts, error: draftsError } = await supabase
+    .from(table)
+    .select("*")
+    .eq("channel_status", "queued")
+    .order("created_at", { ascending: false });
+
+  if (draftsError) throw draftsError;
+
+  const productIds = Array.from(
+    new Set((drafts || []).map((d: any) => d.product_id).filter(Boolean))
+  );
+
+  if (productIds.length === 0) {
+    return drafts || [];
+  }
+
+  const { data: products, error: productsError } = await supabase
+    .from("products")
+    .select("id, source_product_name, barcode, sku, stock_on_hand, sell_price, cost_price, compliance_status, compliance_reasons, brand, weight_grams")
+    .in("id", productIds);
+
+  if (productsError) throw productsError;
+
+  const productMap = new Map((products || []).map((p: any) => [p.id, p]));
+  return (drafts || []).map((d: any) => ({
+    ...d,
+    products: d.product_id ? (productMap.get(d.product_id) || null) : null,
+  }));
+}
+
 export default function ReviewQueue() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -53,29 +86,13 @@ export default function ReviewQueue() {
   // eBay queued drafts
   const { data: ebayDrafts = [], isLoading: loadingEbay } = useQuery({
     queryKey: ["review-queue", "ebay"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ebay_drafts")
-        .select("*, products(source_product_name, barcode, sku, stock_on_hand, sell_price, cost_price, compliance_status, compliance_reasons, brand)")
-        .eq("channel_status", "queued")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: async () => fetchQueuedDraftsWithProducts("ebay_drafts"),
   });
 
   // Shopify queued drafts
   const { data: shopifyDrafts = [], isLoading: loadingShopify } = useQuery({
     queryKey: ["review-queue", "shopify"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("shopify_drafts")
-        .select("*, products(source_product_name, barcode, sku, stock_on_hand, sell_price, cost_price, compliance_status, compliance_reasons, brand)")
-        .eq("channel_status", "queued")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: async () => fetchQueuedDraftsWithProducts("shopify_drafts"),
   });
 
   // Compliance review items (existing behavior)
