@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { PageImageExtractorModal } from "./PageImageExtractorModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +79,7 @@ export function UniversalImageIntake({ images, productId }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [manualUrl, setManualUrl] = useState("");
+  const [extractorUrl, setExtractorUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -144,7 +146,7 @@ export function UniversalImageIntake({ images, productId }: Props) {
         if (type === "image_url") {
           addPendingItem({ type, label: value.split("/").pop() || "image", url: value, previewUrl: value });
         } else if (type === "page_url") {
-          addPendingItem({ type, label: new URL(value).hostname, url: value });
+          setExtractorUrl(value);
         } else {
           toast.info("Unsupported content", { description: "Drop image files, image URLs, or product page links" });
         }
@@ -180,7 +182,7 @@ export function UniversalImageIntake({ images, productId }: Props) {
           addPendingItem({ type, label: value.split("/").pop() || "image", url: value, previewUrl: value });
           e.preventDefault();
         } else if (type === "page_url") {
-          addPendingItem({ type, label: new URL(value).hostname, url: value });
+          setExtractorUrl(value);
           e.preventDefault();
         }
         // If it's unknown text, let the paste proceed normally (e.g., in an input)
@@ -208,7 +210,7 @@ export function UniversalImageIntake({ images, productId }: Props) {
     if (type === "image_url") {
       addPendingItem({ type, label: value.split("/").pop() || "image", url: value, previewUrl: value });
     } else if (type === "page_url") {
-      addPendingItem({ type, label: new URL(value).hostname, url: value });
+      setExtractorUrl(value);
     } else {
       toast.error("Enter a valid image URL or product page URL");
       return;
@@ -586,6 +588,15 @@ export function UniversalImageIntake({ images, productId }: Props) {
           ))}
         </div>
       )}
+
+      {/* Page Image Extractor Modal */}
+      <PageImageExtractorModal
+        open={!!extractorUrl}
+        onOpenChange={(open) => !open && setExtractorUrl(null)}
+        pageUrl={extractorUrl || ""}
+        productId={productId}
+        existingImageCount={images.length}
+      />
     </div>
   );
 }
