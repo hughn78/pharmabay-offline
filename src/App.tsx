@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/exports" element={<Exports />} />
             <Route path="/import" element={<ImportStock />} />
             <Route path="/sync" element={<ChannelSync />} />
+            <Route path="/reconciliation" element={<ShopifyReconciliation />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/audit" element={<AuditLog />} />
           </Route>
