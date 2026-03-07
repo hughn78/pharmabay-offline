@@ -113,7 +113,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="compliance" className="mt-4">
-          <ComplianceRules />
+          <ComplianceRuleEditor />
         </TabsContent>
 
         <TabsContent value="categories" className="mt-4">
