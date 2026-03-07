@@ -1,4 +1,13 @@
-export const COMPARE_FIELDS = [
+type CompareFieldDef = {
+  key: string;
+  label: string;
+  localKey: string;
+  shopifyPath: string;
+  isArray?: boolean;
+  isNumber?: boolean;
+};
+
+export const COMPARE_FIELDS: CompareFieldDef[] = [
   { key: "title", label: "Title", localKey: "normalized_product_name", shopifyPath: "title" },
   { key: "vendor", label: "Vendor / Brand", localKey: "brand", shopifyPath: "vendor" },
   { key: "product_type", label: "Product Type", localKey: "product_type", shopifyPath: "productType" },
@@ -9,7 +18,7 @@ export const COMPARE_FIELDS = [
   { key: "price", label: "Price", localKey: "sell_price", shopifyPath: "_firstVariantPrice", isNumber: true },
   { key: "cost", label: "Cost Price", localKey: "cost_price", shopifyPath: "_firstVariantCostPerItem", isNumber: true },
   { key: "inventory", label: "Inventory Qty", localKey: "stock_on_hand", shopifyPath: "_firstVariantInventoryQty", isNumber: true },
-] as const;
+];
 
 export type CompareField = typeof COMPARE_FIELDS[number];
 
