@@ -32,6 +32,48 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [complianceFilter, setComplianceFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isRunningCompliance, setIsRunningCompliance] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: complianceRules = [] } = useQuery({
+    queryKey: ["compliance-rules"],
+    queryFn: async () => {
+      const { data } = await supabase.from("compliance_rules").select("*").order("priority");
+      return data || [];
+    },
+  });
+
+  const handleRunCompliance = async () => {
+    const targets = selectedIds.size > 0
+      ? products.filter((p: any) => selectedIds.has(p.id))
+      : products;
+    if (targets.length === 0) return;
+
+    setIsRunningCompliance(true);
+    let updated = 0;
+    try {
+      for (const p of targets) {
+        const result = fullComplianceCheck(p, complianceRules);
+        if (result.status !== p.compliance_status) {
+          await supabase
+            .from("products")
+            .update({
+              compliance_status: result.status,
+              compliance_reasons: result.reasons,
+            })
+            .eq("id", p.id);
+          updated++;
+        }
+      }
+      toast.success(`Compliance evaluated: ${updated} products updated`);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+    } catch (err: any) {
+      toast.error("Compliance check failed: " + err.message);
+    } finally {
+      setIsRunningCompliance(false);
+    }
+  };
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products", search, complianceFilter],
