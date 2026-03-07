@@ -113,6 +113,72 @@ export default function Products() {
     }
   };
 
+  const handleMarkChannelReady = async (channel: "ebay" | "shopify") => {
+    const selected = products.filter((p: any) => selectedIds.has(p.id));
+    if (selected.length === 0) return;
+
+    try {
+      const table = channel === "ebay" ? "ebay_drafts" : "shopify_drafts";
+      let upserted = 0;
+
+      for (const p of selected) {
+        const draftData = channel === "ebay"
+          ? {
+              product_id: p.id,
+              title: (p.source_product_name || "").substring(0, 80),
+              brand: p.brand,
+              ean: p.barcode,
+              channel_status: "ready",
+              start_price: p.sell_price,
+              quantity: p.quantity_available_for_ebay ?? p.stock_on_hand ?? 0,
+            }
+          : {
+              product_id: p.id,
+              title: p.source_product_name,
+              vendor: p.brand,
+              product_type: p.product_type || p.z_category,
+              channel_status: "ready",
+              status: "draft",
+            };
+
+        await supabase.from(table).upsert(draftData, { onConflict: "product_id" });
+        upserted++;
+      }
+
+      toast.success(`${upserted} products marked as ${channel === "ebay" ? "eBay" : "Shopify"} ready`);
+      queryClient.invalidateQueries({ queryKey: [channel === "ebay" ? "ebay-draft" : "shopify-draft"] });
+    } catch (err: any) {
+      toast.error(`Failed: ${err.message}`);
+    }
+  };
+
+  const handleExportCsv = () => {
+    const selected = products.filter((p: any) => selectedIds.has(p.id));
+    if (selected.length === 0) return;
+
+    const rows = selected.map((p: any) => ({
+      product_name: p.source_product_name,
+      barcode: p.barcode,
+      sku: p.sku,
+      brand: p.brand,
+      stock_on_hand: p.stock_on_hand,
+      cost_price: p.cost_price,
+      sell_price: p.sell_price,
+      compliance_status: p.compliance_status,
+      enrichment_status: p.enrichment_status,
+    }));
+
+    const csv = Papa.unparse(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `products-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${selected.length} products to CSV`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
