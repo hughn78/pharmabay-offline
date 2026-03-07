@@ -20,12 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, Filter, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Package, Search, Filter, MoreHorizontal, RefreshCw, Download } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
 import { fullComplianceCheck } from "@/lib/compliance-engine";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import Papa from "papaparse";
 
 export default function Products() {
   const navigate = useNavigate();
