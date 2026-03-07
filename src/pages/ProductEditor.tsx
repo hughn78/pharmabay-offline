@@ -304,6 +304,8 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
           <Textarea defaultValue={draft?.description_html || ""} rows={6} placeholder="Product description..." />
         </div>
 
+        <AiDescriptionGenerator productId={product.id} target="ebay" />
+
         <div className="flex gap-2">
           <Button>Save eBay Draft</Button>
           <Button variant="outline">Mark Ready</Button>
