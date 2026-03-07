@@ -22,6 +22,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
+import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
 
 export default function ProductEditor() {
   const { id } = useParams();
