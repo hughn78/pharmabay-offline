@@ -193,9 +193,12 @@ export default function Products() {
           </Button>
           {selectedIds.size > 0 && (
             <>
-              <Button size="sm" variant="secondary">Mark eBay Ready</Button>
-              <Button size="sm" variant="secondary">Mark Shopify Ready</Button>
-              <Button size="sm" variant="secondary">Export CSV</Button>
+              <Button size="sm" variant="secondary" onClick={() => handleMarkChannelReady("ebay")}>Mark eBay Ready</Button>
+              <Button size="sm" variant="secondary" onClick={() => handleMarkChannelReady("shopify")}>Mark Shopify Ready</Button>
+              <Button size="sm" variant="secondary" onClick={handleExportCsv}>
+                <Download className="h-3.5 w-3.5 mr-1" />
+                Export CSV
+              </Button>
             </>
           )}
         </div>
