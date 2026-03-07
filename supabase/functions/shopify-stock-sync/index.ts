@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
       }
 
       // Match and build items
-      const items = matchProducts(localProducts, variantMap, reserveBuffer, syncMode, maxCap, syncZero);
+      const items = matchProducts(localProducts, variantMap, reserveBuffer, syncMode, maxCap, syncZero, locationId!);
 
       // Batch insert items
       const itemRows = items.map((item) => ({
