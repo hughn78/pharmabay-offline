@@ -14,6 +14,7 @@ import Settings from "./pages/Settings";
 import AuditLog from "./pages/AuditLog";
 import ProductEditor from "./pages/ProductEditor";
 import ShopifyReconciliation from "./pages/ShopifyReconciliation";
+import ShopifyStockSync from "./pages/ShopifyStockSync";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/import" element={<ImportStock />} />
             <Route path="/sync" element={<ChannelSync />} />
             <Route path="/reconciliation" element={<ShopifyReconciliation />} />
+            <Route path="/stock-sync" element={<ShopifyStockSync />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/audit" element={<AuditLog />} />
           </Route>

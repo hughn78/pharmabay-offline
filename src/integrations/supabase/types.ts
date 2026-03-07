@@ -722,45 +722,60 @@ export type Database = {
         Row: {
           access_token_encrypted: string | null
           api_version: string | null
+          auto_sync_matched_only: boolean | null
           created_at: string | null
           granted_scopes: string[] | null
           id: string
+          inventory_sync_mode: string | null
           last_successful_sync_at: string | null
           last_sync_status: string | null
+          max_qty_cap: number | null
           online_store_publication_id: string | null
           primary_location_id: string | null
+          reserve_stock_buffer: number | null
           shop_domain: string | null
           shop_name: string | null
+          sync_zero_stock: boolean | null
           updated_at: string | null
           webhook_secret_encrypted: string | null
         }
         Insert: {
           access_token_encrypted?: string | null
           api_version?: string | null
+          auto_sync_matched_only?: boolean | null
           created_at?: string | null
           granted_scopes?: string[] | null
           id?: string
+          inventory_sync_mode?: string | null
           last_successful_sync_at?: string | null
           last_sync_status?: string | null
+          max_qty_cap?: number | null
           online_store_publication_id?: string | null
           primary_location_id?: string | null
+          reserve_stock_buffer?: number | null
           shop_domain?: string | null
           shop_name?: string | null
+          sync_zero_stock?: boolean | null
           updated_at?: string | null
           webhook_secret_encrypted?: string | null
         }
         Update: {
           access_token_encrypted?: string | null
           api_version?: string | null
+          auto_sync_matched_only?: boolean | null
           created_at?: string | null
           granted_scopes?: string[] | null
           id?: string
+          inventory_sync_mode?: string | null
           last_successful_sync_at?: string | null
           last_sync_status?: string | null
+          max_qty_cap?: number | null
           online_store_publication_id?: string | null
           primary_location_id?: string | null
+          reserve_stock_buffer?: number | null
           shop_domain?: string | null
           shop_name?: string | null
+          sync_zero_stock?: boolean | null
           updated_at?: string | null
           webhook_secret_encrypted?: string | null
         }
@@ -1132,6 +1147,197 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_sync_items: {
+        Row: {
+          created_at: string | null
+          current_shopify_qty: number | null
+          error_message: string | null
+          id: string
+          local_barcode: string | null
+          local_product_name: string | null
+          local_sku: string | null
+          local_stock_on_hand: number | null
+          match_confidence: string | null
+          match_type: string | null
+          product_id: string | null
+          proposed_shopify_qty: number | null
+          qty_difference: number | null
+          quantity_to_push: number | null
+          request_payload: Json | null
+          reserve_buffer: number | null
+          response_payload: Json | null
+          shopify_barcode: string | null
+          shopify_inventory_item_id: string | null
+          shopify_location_id: string | null
+          shopify_product_gid: string | null
+          shopify_product_title: string | null
+          shopify_sku: string | null
+          shopify_variant_gid: string | null
+          shopify_variant_title: string | null
+          sync_run_id: string | null
+          sync_status: string
+          synced_at: string | null
+          synced_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_shopify_qty?: number | null
+          error_message?: string | null
+          id?: string
+          local_barcode?: string | null
+          local_product_name?: string | null
+          local_sku?: string | null
+          local_stock_on_hand?: number | null
+          match_confidence?: string | null
+          match_type?: string | null
+          product_id?: string | null
+          proposed_shopify_qty?: number | null
+          qty_difference?: number | null
+          quantity_to_push?: number | null
+          request_payload?: Json | null
+          reserve_buffer?: number | null
+          response_payload?: Json | null
+          shopify_barcode?: string | null
+          shopify_inventory_item_id?: string | null
+          shopify_location_id?: string | null
+          shopify_product_gid?: string | null
+          shopify_product_title?: string | null
+          shopify_sku?: string | null
+          shopify_variant_gid?: string | null
+          shopify_variant_title?: string | null
+          sync_run_id?: string | null
+          sync_status?: string
+          synced_at?: string | null
+          synced_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_shopify_qty?: number | null
+          error_message?: string | null
+          id?: string
+          local_barcode?: string | null
+          local_product_name?: string | null
+          local_sku?: string | null
+          local_stock_on_hand?: number | null
+          match_confidence?: string | null
+          match_type?: string | null
+          product_id?: string | null
+          proposed_shopify_qty?: number | null
+          qty_difference?: number | null
+          quantity_to_push?: number | null
+          request_payload?: Json | null
+          reserve_buffer?: number | null
+          response_payload?: Json | null
+          shopify_barcode?: string | null
+          shopify_inventory_item_id?: string | null
+          shopify_location_id?: string | null
+          shopify_product_gid?: string | null
+          shopify_product_title?: string | null
+          shopify_sku?: string | null
+          shopify_variant_gid?: string | null
+          shopify_variant_title?: string | null
+          sync_run_id?: string | null
+          sync_status?: string
+          synced_at?: string | null
+          synced_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_sync_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_sync_items_sync_run_id_fkey"
+            columns: ["sync_run_id"]
+            isOneToOne: false
+            referencedRelation: "stock_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_sync_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          import_batch_id: string | null
+          inventory_sync_mode: string
+          max_qty_cap: number | null
+          notes: string | null
+          reserve_buffer: number
+          started_at: string | null
+          started_by: string | null
+          status: string
+          sync_mode: string
+          sync_zero_stock: boolean
+          total_failed: number | null
+          total_local_products: number | null
+          total_matched: number | null
+          total_no_match: number | null
+          total_skipped: number | null
+          total_synced: number | null
+          total_uncertain: number | null
+          total_update_needed: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          import_batch_id?: string | null
+          inventory_sync_mode?: string
+          max_qty_cap?: number | null
+          notes?: string | null
+          reserve_buffer?: number
+          started_at?: string | null
+          started_by?: string | null
+          status?: string
+          sync_mode?: string
+          sync_zero_stock?: boolean
+          total_failed?: number | null
+          total_local_products?: number | null
+          total_matched?: number | null
+          total_no_match?: number | null
+          total_skipped?: number | null
+          total_synced?: number | null
+          total_uncertain?: number | null
+          total_update_needed?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          import_batch_id?: string | null
+          inventory_sync_mode?: string
+          max_qty_cap?: number | null
+          notes?: string | null
+          reserve_buffer?: number
+          started_at?: string | null
+          started_by?: string | null
+          status?: string
+          sync_mode?: string
+          sync_zero_stock?: boolean
+          total_failed?: number | null
+          total_local_products?: number | null
+          total_matched?: number | null
+          total_no_match?: number | null
+          total_skipped?: number | null
+          total_synced?: number | null
+          total_uncertain?: number | null
+          total_update_needed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_sync_runs_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
         ]
