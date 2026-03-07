@@ -572,6 +572,7 @@ function ChannelTable({
             <TableHead>Brand</TableHead>
             <TableHead>Qty</TableHead>
             <TableHead>Price</TableHead>
+            <TableHead>Live</TableHead>
             <TableHead>Compliance</TableHead>
           </TableRow>
         </TableHeader>
