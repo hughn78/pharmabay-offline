@@ -7,6 +7,7 @@ import { Scan, Search, Package, Clock, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { RapidReviewModal } from "@/components/scan/RapidReviewModal";
 
 export default function ScanSearch() {
   const [barcode, setBarcode] = useState("");
@@ -14,6 +15,7 @@ export default function ScanSearch() {
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [reviewProductId, setReviewProductId] = useState<string | null>(null);
   const barcodeRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -21,9 +23,16 @@ export default function ScanSearch() {
     barcodeRef.current?.focus();
   }, []);
 
+  // Re-focus barcode input when modal closes
+  useEffect(() => {
+    if (!reviewProductId) {
+      setTimeout(() => barcodeRef.current?.focus(), 100);
+    }
+  }, [reviewProductId]);
+
   const handleBarcodeScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
-    
+
     try {
       const { data, error } = await supabase
         .from("products")
@@ -34,11 +43,19 @@ export default function ScanSearch() {
       if (error) throw error;
 
       if (data) {
-        setRecentScans(prev => [{ ...data, scannedAt: new Date() }, ...prev.slice(0, 9)]);
-        navigate(`/products/${data.id}`);
+        setRecentScans((prev) => [
+          { ...data, scannedAt: new Date() },
+          ...prev.filter((s) => s.id !== data.id).slice(0, 19),
+        ]);
+        setReviewProductId(data.id);
       } else {
-        toast.info("Product not found", { description: `No product with barcode ${code}. Create a new entry?` });
-        setRecentScans(prev => [{ barcode: code, source_product_name: "Unknown - New Scan", scannedAt: new Date(), isNew: true }, ...prev.slice(0, 9)]);
+        toast.info("Product not found", {
+          description: `No product with barcode ${code}. Create a new entry?`,
+        });
+        setRecentScans((prev) => [
+          { barcode: code, source_product_name: "Unknown - New Scan", scannedAt: new Date(), isNew: true },
+          ...prev.slice(0, 19),
+        ]);
       }
     } catch (err) {
       toast.error("Scan error", { description: String(err) });
@@ -46,7 +63,7 @@ export default function ScanSearch() {
 
     setBarcode("");
     barcodeRef.current?.focus();
-  }, [navigate]);
+  }, []);
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
@@ -55,7 +72,9 @@ export default function ScanSearch() {
       const { data, error } = await supabase
         .from("products")
         .select("id, source_product_name, barcode, sku, brand, stock_on_hand, compliance_status")
-        .or(`source_product_name.ilike.%${searchQuery}%,barcode.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,brand.ilike.%${searchQuery}%`)
+        .or(
+          `source_product_name.ilike.%${searchQuery}%,barcode.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,brand.ilike.%${searchQuery}%`
+        )
         .limit(20);
 
       if (error) throw error;
@@ -122,19 +141,23 @@ export default function ScanSearch() {
         {searchResults.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Search Results ({searchResults.length})</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Search Results ({searchResults.length})
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {searchResults.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => navigate(`/products/${p.id}`)}
+                  onClick={() => setReviewProductId(p.id)}
                   className="w-full text-left p-3 rounded-md hover:bg-muted/50 transition-colors border"
                 >
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">{p.source_product_name}</div>
-                      <div className="text-xs text-muted-foreground font-mono">{p.barcode || p.sku}</div>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        {p.barcode || p.sku}
+                      </div>
                     </div>
                     <ComplianceBadge status={p.compliance_status} />
                   </div>
@@ -160,19 +183,37 @@ export default function ScanSearch() {
             ) : (
               <div className="space-y-2">
                 {recentScans.map((s, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded border text-sm">
+                  <button
+                    key={`${s.barcode}-${i}`}
+                    onClick={() => s.id && setReviewProductId(s.id)}
+                    className="w-full text-left flex items-center justify-between p-2 rounded border text-sm hover:bg-muted/30 transition-colors"
+                  >
                     <div>
                       <div className="font-medium">{s.source_product_name || "Unknown"}</div>
                       <div className="text-xs text-muted-foreground font-mono">{s.barcode}</div>
                     </div>
-                    {s.isNew && <Badge variant="outline" className="text-xs">New</Badge>}
-                  </div>
+                    {s.isNew && (
+                      <Badge variant="outline" className="text-xs">
+                        New
+                      </Badge>
+                    )}
+                  </button>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Rapid Review Modal */}
+      <RapidReviewModal
+        productId={reviewProductId}
+        onClose={() => setReviewProductId(null)}
+        onSaveAndNext={() => {
+          setReviewProductId(null);
+          // Focus will be restored by the useEffect above
+        }}
+      />
     </div>
   );
 }
@@ -185,8 +226,6 @@ function ComplianceBadge({ status }: { status?: string }) {
     blocked: "status-blocked",
   };
   return (
-    <Badge className={`text-[10px] ${map[status] || ""}`}>
-      {status?.replace("_", " ")}
-    </Badge>
+    <Badge className={`text-[10px] ${map[status] || ""}`}>{status?.replace("_", " ")}</Badge>
   );
 }
