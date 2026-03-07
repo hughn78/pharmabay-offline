@@ -33,6 +33,7 @@ import Papa from "papaparse";
 export default function Products() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [complianceFilter, setComplianceFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRunningCompliance, setIsRunningCompliance] = useState(false);
