@@ -287,9 +287,14 @@ function EnrichmentTab({ product }: { product: any }) {
       const ebayDraft: any = {
         product_id: product.id,
         title: ebayTitle,
+        subtitle: gen.subtitle || null,
         brand: brand,
         description_html: ebayDescParts.join("\n") || null,
         mpn: gen.mpn || null,
+        epid: gen.epid || null,
+        upc: gen.upc || null,
+        ean: product.barcode || null,
+        category_id: gen.ebay_category_id || null,
         updated_at: now,
       };
 

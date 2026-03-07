@@ -160,6 +160,11 @@ Never fabricate product information. If uncertain, note it.`;
 - claims_summary: Product claims/benefits
 - description: A comprehensive product description (2-3 paragraphs)
 - suggested_tags: Array of relevant tags/categories
+- ebay_category_id: The most appropriate eBay Australia category ID number for this product (numeric string)
+- upc: UPC code if known (otherwise empty string)
+- epid: eBay Product ID (ePID) if known (otherwise empty string)
+- mpn: Manufacturer Part Number if known (otherwise empty string)
+- subtitle: A compelling eBay subtitle (max 55 chars) highlighting a key benefit or feature
 
 Product information available:
 - Name: ${productName}
