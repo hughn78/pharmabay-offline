@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle, XCircle, Image, Barcode } from "lucide-react";
+import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -96,14 +97,14 @@ export default function ReviewQueue() {
                       </div>
                     )}
                   </div>
-                  <Badge
-                    className={`text-[10px] shrink-0 ml-3 ${
-                      p.compliance_status === "blocked" ? "status-blocked" :
-                      p.compliance_status === "review_required" ? "status-review" : ""
-                    }`}
-                  >
-                    {p.compliance_status?.replace("_", " ") || "unknown"}
-                  </Badge>
+                  <div className="shrink-0 ml-3" onClick={(e) => e.stopPropagation()}>
+                    <ComplianceBadgeWithOverride
+                      productId={p.id}
+                      productName={p.source_product_name || ""}
+                      status={p.compliance_status}
+                      reasons={p.compliance_reasons as string[] | null}
+                    />
+                  </div>
                 </button>
               ))}
             </div>

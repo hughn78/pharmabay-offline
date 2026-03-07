@@ -20,8 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, Filter, MoreHorizontal } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Package, Search, Filter, MoreHorizontal, RefreshCw } from "lucide-react";
+import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
+import { fullComplianceCheck } from "@/lib/compliance-engine";
+import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Products() {
@@ -29,6 +32,48 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [complianceFilter, setComplianceFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isRunningCompliance, setIsRunningCompliance] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: complianceRules = [] } = useQuery({
+    queryKey: ["compliance-rules"],
+    queryFn: async () => {
+      const { data } = await supabase.from("compliance_rules").select("*").order("priority");
+      return data || [];
+    },
+  });
+
+  const handleRunCompliance = async () => {
+    const targets = selectedIds.size > 0
+      ? products.filter((p: any) => selectedIds.has(p.id))
+      : products;
+    if (targets.length === 0) return;
+
+    setIsRunningCompliance(true);
+    let updated = 0;
+    try {
+      for (const p of targets) {
+        const result = fullComplianceCheck(p, complianceRules);
+        if (result.status !== p.compliance_status) {
+          await supabase
+            .from("products")
+            .update({
+              compliance_status: result.status,
+              compliance_reasons: result.reasons,
+            })
+            .eq("id", p.id);
+          updated++;
+        }
+      }
+      toast.success(`Compliance evaluated: ${updated} products updated`);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+    } catch (err: any) {
+      toast.error("Compliance check failed: " + err.message);
+    } finally {
+      setIsRunningCompliance(false);
+    }
+  };
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products", search, complianceFilter],
@@ -74,13 +119,19 @@ export default function Products() {
           <h1 className="text-2xl font-bold tracking-tight">Products</h1>
           <p className="text-muted-foreground text-sm">Manage your product catalog</p>
         </div>
-        {selectedIds.size > 0 && (
-          <div className="flex gap-2">
-            <Button size="sm" variant="secondary">Mark eBay Ready</Button>
-            <Button size="sm" variant="secondary">Mark Shopify Ready</Button>
-            <Button size="sm" variant="secondary">Export CSV</Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleRunCompliance} disabled={isRunningCompliance}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRunningCompliance ? "animate-spin" : ""}`} />
+            Run Compliance
+          </Button>
+          {selectedIds.size > 0 && (
+            <>
+              <Button size="sm" variant="secondary">Mark eBay Ready</Button>
+              <Button size="sm" variant="secondary">Mark Shopify Ready</Button>
+              <Button size="sm" variant="secondary">Export CSV</Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -171,7 +222,14 @@ export default function Products() {
                       <TableCell>{p.stock_on_hand ?? "—"}</TableCell>
                       <TableCell>{p.cost_price ? `$${Number(p.cost_price).toFixed(2)}` : "—"}</TableCell>
                       <TableCell>{p.sell_price ? `$${Number(p.sell_price).toFixed(2)}` : "—"}</TableCell>
-                      <TableCell><ComplianceBadge status={p.compliance_status} /></TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <ComplianceBadgeWithOverride
+                          productId={p.id}
+                          productName={p.source_product_name || ""}
+                          status={p.compliance_status}
+                          reasons={p.compliance_reasons as string[] | null}
+                        />
+                      </TableCell>
                       <TableCell><EnrichmentBadge status={p.enrichment_status} /></TableCell>
                     </TableRow>
                   ))
