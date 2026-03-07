@@ -17,11 +17,11 @@ import {
   ShoppingCart,
   Store,
   FileText,
-  Upload,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
 
 export default function ProductEditor() {
   const { id } = useParams();
