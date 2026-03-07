@@ -128,7 +128,7 @@ export default function Products() {
             title: (p.source_product_name || "").substring(0, 80),
             brand: p.brand,
             ean: p.barcode,
-            channel_status: "ready",
+            channel_status: "queued",
             start_price: p.sell_price,
             quantity: p.quantity_available_for_ebay ?? Math.max(0, Number(p.stock_on_hand) || 0),
           };
@@ -144,7 +144,7 @@ export default function Products() {
             title: p.source_product_name,
             vendor: p.brand,
             product_type: p.product_type || p.z_category,
-            channel_status: "ready",
+            channel_status: "queued",
             status: "draft",
           };
           if (existing) {
@@ -156,8 +156,10 @@ export default function Products() {
         count++;
       }
 
-      toast.success(`${count} products marked as ${channel === "ebay" ? "eBay" : "Shopify"} ready`);
-      queryClient.invalidateQueries({ queryKey: [channel === "ebay" ? "ebay-draft" : "shopify-draft"] });
+      toast.success(`${count} products queued for ${channel === "ebay" ? "eBay" : "Shopify"} review`);
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+      navigate("/review");
     } catch (err: any) {
       toast.error(`Failed: ${err.message}`);
     }
