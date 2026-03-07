@@ -35,6 +35,7 @@ const navItems = [
   { title: "Import Stock", url: "/import", icon: Upload },
   { title: "Channel Sync", url: "/sync", icon: RefreshCw },
   { title: "Reconciliation", url: "/reconciliation", icon: ArrowLeftRight },
+  { title: "Stock Sync", url: "/stock-sync", icon: ArrowUpDown },
   { title: "Settings", url: "/settings", icon: Settings },
   { title: "Audit Log", url: "/audit", icon: FileText },
 ];
