@@ -79,6 +79,7 @@ export function UniversalImageIntake({ images, productId }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [manualUrl, setManualUrl] = useState("");
+  const [extractorUrl, setExtractorUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const dropZoneRef = useRef<HTMLDivElement>(null);
