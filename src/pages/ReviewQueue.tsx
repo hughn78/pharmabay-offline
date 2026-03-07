@@ -602,6 +602,12 @@ function ChannelTable({
                     ? (d.start_price ? `$${Number(d.start_price).toFixed(2)}` : "—")
                     : (p.sell_price ? `$${Number(p.sell_price).toFixed(2)}` : "—")}
                 </TableCell>
+                <TableCell>
+                  <LiveStatusBadges
+                    ebayLive={d.product_id ? ebayMap.get(d.product_id) : undefined}
+                    shopifyLive={d.product_id ? shopifyMap.get(d.product_id) : undefined}
+                  />
+                </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   {p.compliance_status ? (
                     <ComplianceBadgeWithOverride
