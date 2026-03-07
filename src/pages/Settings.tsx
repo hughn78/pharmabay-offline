@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ComplianceRuleEditor } from "@/components/compliance/ComplianceRuleEditor";
+import { ShopifySettings } from "@/components/shopify/ShopifySettings";
 
 export default function Settings() {
   return (
