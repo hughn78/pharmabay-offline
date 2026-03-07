@@ -110,6 +110,95 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_listing_import_batches: {
+        Row: {
+          ambiguous_count: number | null
+          error_count: number | null
+          filename: string | null
+          id: string
+          imported_at: string
+          imported_by: string | null
+          matched_count: number | null
+          notes: string | null
+          platform: string
+          row_count: number | null
+          unmatched_count: number | null
+        }
+        Insert: {
+          ambiguous_count?: number | null
+          error_count?: number | null
+          filename?: string | null
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          matched_count?: number | null
+          notes?: string | null
+          platform: string
+          row_count?: number | null
+          unmatched_count?: number | null
+        }
+        Update: {
+          ambiguous_count?: number | null
+          error_count?: number | null
+          filename?: string | null
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          matched_count?: number | null
+          notes?: string | null
+          platform?: string
+          row_count?: number | null
+          unmatched_count?: number | null
+        }
+        Relationships: []
+      }
+      channel_listing_matches: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          id: string
+          import_row_id: string
+          is_confirmed: boolean | null
+          match_confidence: string | null
+          match_method: string | null
+          platform: string
+          product_id: string | null
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          import_row_id: string
+          is_confirmed?: boolean | null
+          match_confidence?: string | null
+          match_method?: string | null
+          platform: string
+          product_id?: string | null
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          import_row_id?: string
+          is_confirmed?: boolean | null
+          match_confidence?: string | null
+          match_method?: string | null
+          platform?: string
+          product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_listing_matches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_rules: {
         Row: {
           action: string | null
@@ -270,6 +359,138 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ebay_drafts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_live_listings: {
+        Row: {
+          auction_buy_it_now_price: number | null
+          available_quantity: number | null
+          bids: number | null
+          cd_card_condition: string | null
+          cd_grade: string | null
+          cd_professional_grader: string | null
+          cda_certification_number: string | null
+          condition: string | null
+          currency: string | null
+          current_price: number | null
+          custom_label_sku: string | null
+          ean: string | null
+          ebay_category_1_name: string | null
+          ebay_category_1_number: string | null
+          ebay_category_2_name: string | null
+          ebay_category_2_number: string | null
+          ebay_item_number: string | null
+          ebay_product_id_epid: string | null
+          end_date: string | null
+          format: string | null
+          id: string
+          import_batch_id: string | null
+          imported_at: string
+          isbn: string | null
+          listing_site: string | null
+          product_id: string | null
+          raw_row: Json | null
+          reserve_price: number | null
+          sold_quantity: number | null
+          start_date: string | null
+          start_price: number | null
+          title: string | null
+          upc: string | null
+          updated_at: string
+          variation_details: string | null
+          watchers: number | null
+        }
+        Insert: {
+          auction_buy_it_now_price?: number | null
+          available_quantity?: number | null
+          bids?: number | null
+          cd_card_condition?: string | null
+          cd_grade?: string | null
+          cd_professional_grader?: string | null
+          cda_certification_number?: string | null
+          condition?: string | null
+          currency?: string | null
+          current_price?: number | null
+          custom_label_sku?: string | null
+          ean?: string | null
+          ebay_category_1_name?: string | null
+          ebay_category_1_number?: string | null
+          ebay_category_2_name?: string | null
+          ebay_category_2_number?: string | null
+          ebay_item_number?: string | null
+          ebay_product_id_epid?: string | null
+          end_date?: string | null
+          format?: string | null
+          id?: string
+          import_batch_id?: string | null
+          imported_at?: string
+          isbn?: string | null
+          listing_site?: string | null
+          product_id?: string | null
+          raw_row?: Json | null
+          reserve_price?: number | null
+          sold_quantity?: number | null
+          start_date?: string | null
+          start_price?: number | null
+          title?: string | null
+          upc?: string | null
+          updated_at?: string
+          variation_details?: string | null
+          watchers?: number | null
+        }
+        Update: {
+          auction_buy_it_now_price?: number | null
+          available_quantity?: number | null
+          bids?: number | null
+          cd_card_condition?: string | null
+          cd_grade?: string | null
+          cd_professional_grader?: string | null
+          cda_certification_number?: string | null
+          condition?: string | null
+          currency?: string | null
+          current_price?: number | null
+          custom_label_sku?: string | null
+          ean?: string | null
+          ebay_category_1_name?: string | null
+          ebay_category_1_number?: string | null
+          ebay_category_2_name?: string | null
+          ebay_category_2_number?: string | null
+          ebay_item_number?: string | null
+          ebay_product_id_epid?: string | null
+          end_date?: string | null
+          format?: string | null
+          id?: string
+          import_batch_id?: string | null
+          imported_at?: string
+          isbn?: string | null
+          listing_site?: string | null
+          product_id?: string | null
+          raw_row?: Json | null
+          reserve_price?: number | null
+          sold_quantity?: number | null
+          start_date?: string | null
+          start_price?: number | null
+          title?: string | null
+          upc?: string | null
+          updated_at?: string
+          variation_details?: string | null
+          watchers?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_live_listings_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "channel_listing_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_live_listings_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -911,6 +1132,237 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "shopify_drafts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopify_live_products: {
+        Row: {
+          body_html: string | null
+          cost_per_item: number | null
+          gift_card: string | null
+          google_age_group: string | null
+          google_condition: string | null
+          google_custom_label_0: string | null
+          google_custom_label_1: string | null
+          google_custom_label_2: string | null
+          google_custom_label_3: string | null
+          google_custom_label_4: string | null
+          google_custom_product: string | null
+          google_gender: string | null
+          google_mpn: string | null
+          google_product_category: string | null
+          handle: string | null
+          id: string
+          image_alt_text: string | null
+          image_position: number | null
+          image_src: string | null
+          import_batch_id: string | null
+          imported_at: string
+          metafield_age_group: string | null
+          metafield_coil_connection: string | null
+          metafield_color_pattern: string | null
+          metafield_dietary_preferences: string | null
+          metafield_ecigarette_style: string | null
+          metafield_ingredient_category: string | null
+          metafield_usage_type: string | null
+          metafield_vaping_style: string | null
+          mm_google_custom_product: string | null
+          option1_linked_to: string | null
+          option1_name: string | null
+          option1_value: string | null
+          option2_linked_to: string | null
+          option2_name: string | null
+          option2_value: string | null
+          option3_linked_to: string | null
+          option3_name: string | null
+          option3_value: string | null
+          product_category: string | null
+          product_id: string | null
+          product_rating_count: string | null
+          published: string | null
+          raw_row: Json | null
+          seo_description: string | null
+          seo_title: string | null
+          status: string | null
+          tags: string | null
+          title: string | null
+          type: string | null
+          unit_price_base_measure: string | null
+          unit_price_base_measure_unit: string | null
+          unit_price_total_measure: string | null
+          unit_price_total_measure_unit: string | null
+          updated_at: string
+          variant_barcode: string | null
+          variant_compare_at_price: number | null
+          variant_fulfillment_service: string | null
+          variant_grams: number | null
+          variant_image: string | null
+          variant_inventory_policy: string | null
+          variant_inventory_tracker: string | null
+          variant_price: number | null
+          variant_requires_shipping: string | null
+          variant_sku: string | null
+          variant_tax_code: string | null
+          variant_taxable: string | null
+          variant_weight_unit: string | null
+          vendor: string | null
+        }
+        Insert: {
+          body_html?: string | null
+          cost_per_item?: number | null
+          gift_card?: string | null
+          google_age_group?: string | null
+          google_condition?: string | null
+          google_custom_label_0?: string | null
+          google_custom_label_1?: string | null
+          google_custom_label_2?: string | null
+          google_custom_label_3?: string | null
+          google_custom_label_4?: string | null
+          google_custom_product?: string | null
+          google_gender?: string | null
+          google_mpn?: string | null
+          google_product_category?: string | null
+          handle?: string | null
+          id?: string
+          image_alt_text?: string | null
+          image_position?: number | null
+          image_src?: string | null
+          import_batch_id?: string | null
+          imported_at?: string
+          metafield_age_group?: string | null
+          metafield_coil_connection?: string | null
+          metafield_color_pattern?: string | null
+          metafield_dietary_preferences?: string | null
+          metafield_ecigarette_style?: string | null
+          metafield_ingredient_category?: string | null
+          metafield_usage_type?: string | null
+          metafield_vaping_style?: string | null
+          mm_google_custom_product?: string | null
+          option1_linked_to?: string | null
+          option1_name?: string | null
+          option1_value?: string | null
+          option2_linked_to?: string | null
+          option2_name?: string | null
+          option2_value?: string | null
+          option3_linked_to?: string | null
+          option3_name?: string | null
+          option3_value?: string | null
+          product_category?: string | null
+          product_id?: string | null
+          product_rating_count?: string | null
+          published?: string | null
+          raw_row?: Json | null
+          seo_description?: string | null
+          seo_title?: string | null
+          status?: string | null
+          tags?: string | null
+          title?: string | null
+          type?: string | null
+          unit_price_base_measure?: string | null
+          unit_price_base_measure_unit?: string | null
+          unit_price_total_measure?: string | null
+          unit_price_total_measure_unit?: string | null
+          updated_at?: string
+          variant_barcode?: string | null
+          variant_compare_at_price?: number | null
+          variant_fulfillment_service?: string | null
+          variant_grams?: number | null
+          variant_image?: string | null
+          variant_inventory_policy?: string | null
+          variant_inventory_tracker?: string | null
+          variant_price?: number | null
+          variant_requires_shipping?: string | null
+          variant_sku?: string | null
+          variant_tax_code?: string | null
+          variant_taxable?: string | null
+          variant_weight_unit?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          body_html?: string | null
+          cost_per_item?: number | null
+          gift_card?: string | null
+          google_age_group?: string | null
+          google_condition?: string | null
+          google_custom_label_0?: string | null
+          google_custom_label_1?: string | null
+          google_custom_label_2?: string | null
+          google_custom_label_3?: string | null
+          google_custom_label_4?: string | null
+          google_custom_product?: string | null
+          google_gender?: string | null
+          google_mpn?: string | null
+          google_product_category?: string | null
+          handle?: string | null
+          id?: string
+          image_alt_text?: string | null
+          image_position?: number | null
+          image_src?: string | null
+          import_batch_id?: string | null
+          imported_at?: string
+          metafield_age_group?: string | null
+          metafield_coil_connection?: string | null
+          metafield_color_pattern?: string | null
+          metafield_dietary_preferences?: string | null
+          metafield_ecigarette_style?: string | null
+          metafield_ingredient_category?: string | null
+          metafield_usage_type?: string | null
+          metafield_vaping_style?: string | null
+          mm_google_custom_product?: string | null
+          option1_linked_to?: string | null
+          option1_name?: string | null
+          option1_value?: string | null
+          option2_linked_to?: string | null
+          option2_name?: string | null
+          option2_value?: string | null
+          option3_linked_to?: string | null
+          option3_name?: string | null
+          option3_value?: string | null
+          product_category?: string | null
+          product_id?: string | null
+          product_rating_count?: string | null
+          published?: string | null
+          raw_row?: Json | null
+          seo_description?: string | null
+          seo_title?: string | null
+          status?: string | null
+          tags?: string | null
+          title?: string | null
+          type?: string | null
+          unit_price_base_measure?: string | null
+          unit_price_base_measure_unit?: string | null
+          unit_price_total_measure?: string | null
+          unit_price_total_measure_unit?: string | null
+          updated_at?: string
+          variant_barcode?: string | null
+          variant_compare_at_price?: number | null
+          variant_fulfillment_service?: string | null
+          variant_grams?: number | null
+          variant_image?: string | null
+          variant_inventory_policy?: string | null
+          variant_inventory_tracker?: string | null
+          variant_price?: number | null
+          variant_requires_shipping?: string | null
+          variant_sku?: string | null
+          variant_tax_code?: string | null
+          variant_taxable?: string | null
+          variant_weight_unit?: string | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopify_live_products_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "channel_listing_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopify_live_products_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
