@@ -20,7 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, Filter, MoreHorizontal } from "lucide-react";
+import { Package, Search, Filter, MoreHorizontal, RefreshCw } from "lucide-react";
+import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
+import { fullComplianceCheck } from "@/lib/compliance-engine";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
