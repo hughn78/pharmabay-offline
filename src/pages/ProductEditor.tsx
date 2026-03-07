@@ -240,11 +240,14 @@ function EnrichmentTab({ product }: { product: any }) {
     },
     onSuccess: async (data) => {
       const gen = data.generated || {};
+      const now = new Date().toISOString();
+
+      // 1. Update master product
       const updates: any = {
         enrichment_status: "complete",
         enrichment_confidence: "high",
         enrichment_summary: gen,
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       };
       if (gen.normalized_product_name) updates.normalized_product_name = gen.normalized_product_name;
       if (gen.brand) updates.brand = gen.brand;
@@ -258,8 +261,80 @@ function EnrichmentTab({ product }: { product: any }) {
       const { error } = await supabase.from("products").update(updates).eq("id", product.id);
       if (error) throw error;
 
+      // 2. Build eBay title from enriched data
+      const productName = gen.normalized_product_name || product.source_product_name || "";
+      const brand = gen.brand || product.brand || "";
+      const strength = product.strength || "";
+      const packSize = product.pack_size || "";
+      const ebayTitle = [brand.toUpperCase(), productName.toUpperCase(), strength, packSize]
+        .filter(Boolean).join(" ").slice(0, 80);
+
+      // Build description HTML for eBay
+      const ebayDescParts: string[] = [];
+      if (gen.description || gen.description_html) {
+        ebayDescParts.push(gen.description_html || `<p>${gen.description}</p>`);
+      }
+      if (gen.directions_summary) {
+        ebayDescParts.push(`<h3>Directions</h3><p>${gen.directions_summary}</p>`);
+      }
+      if (gen.ingredients_summary) {
+        ebayDescParts.push(`<h3>Ingredients</h3><p>${gen.ingredients_summary}</p>`);
+      }
+      if (gen.warnings_summary) {
+        ebayDescParts.push(`<h3>Warnings</h3><p>${gen.warnings_summary}</p>`);
+      }
+
+      const ebayDraft: any = {
+        product_id: product.id,
+        title: ebayTitle,
+        brand: brand,
+        description_html: ebayDescParts.join("\n") || null,
+        mpn: gen.mpn || null,
+        updated_at: now,
+      };
+
+      // Upsert eBay draft
+      const { data: existingEbay } = await supabase
+        .from("ebay_drafts").select("id").eq("product_id", product.id).maybeSingle();
+      if (existingEbay?.id) {
+        await supabase.from("ebay_drafts").update(ebayDraft).eq("id", existingEbay.id);
+      } else {
+        await supabase.from("ebay_drafts").insert(ebayDraft);
+      }
+
+      // 3. Build Shopify draft
+      const shopifyTitle = gen.normalized_product_name || product.source_product_name || "";
+      const handle = shopifyTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const shopifyDesc = ebayDescParts.join("\n") || null;
+      const seoTitle = (shopifyTitle + (brand ? ` | ${brand}` : "")).slice(0, 70);
+      const seoDesc = (gen.claims_summary || gen.description || shopifyTitle).slice(0, 160);
+
+      const shopifyDraft: any = {
+        product_id: product.id,
+        title: shopifyTitle,
+        handle,
+        vendor: brand || null,
+        product_type: gen.product_type || product.z_category || null,
+        description_html: shopifyDesc,
+        seo_title: seoTitle,
+        seo_description: seoDesc,
+        tags: gen.suggested_tags || gen.tags || null,
+        updated_at: now,
+      };
+
+      const { data: existingShopify } = await supabase
+        .from("shopify_drafts").select("id").eq("product_id", product.id).maybeSingle();
+      if (existingShopify?.id) {
+        await supabase.from("shopify_drafts").update(shopifyDraft).eq("id", existingShopify.id);
+      } else {
+        await supabase.from("shopify_drafts").insert(shopifyDraft);
+      }
+
+      // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ["product", product.id] });
-      toast.success("Enrichment complete — product updated");
+      queryClient.invalidateQueries({ queryKey: ["ebay-draft", product.id] });
+      queryClient.invalidateQueries({ queryKey: ["shopify-draft", product.id] });
+      toast.success("Enrichment complete — product, eBay & Shopify drafts updated");
     },
     onError: (err: Error) => toast.error("Enrichment failed", { description: err.message }),
   });
