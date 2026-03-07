@@ -26,6 +26,9 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const navItems = [
   { title: "Scan / Search", url: "/", icon: Scan },
@@ -44,6 +47,12 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { signOut, user } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    toast.success("Signed out");
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -90,7 +99,21 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-3">
+      <SidebarFooter className="p-3 space-y-2">
+        {!collapsed && user && (
+          <div className="text-[10px] text-sidebar-foreground/50 truncate px-1">
+            {user.email}
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size={collapsed ? "icon" : "sm"}
+          className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+          onClick={handleLogout}
+        >
+          <LogOut className={`h-4 w-4 ${collapsed ? "" : "mr-2"}`} />
+          {!collapsed && <span>Sign Out</span>}
+        </Button>
         {!collapsed && (
           <div className="text-[10px] text-sidebar-foreground/40 text-center">
             PharmaBay Lister v1.0
