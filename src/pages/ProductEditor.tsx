@@ -252,66 +252,8 @@ function EnrichmentTab({ product }: { product: any }) {
 }
 
 function ImagesTab({ images, productId }: { images: any[]; productId: string }) {
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    toast.info("Image intake coming soon", { description: "Drag & drop, paste, and URL extraction will be wired up" });
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Drop Zone */}
-      <Card
-        className={`border-2 border-dashed transition-colors cursor-pointer ${isDragging ? "border-primary bg-primary/5" : "border-border"}`}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-      >
-        <CardContent className="py-10 text-center">
-          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-40" />
-          <p className="text-sm font-medium">Drop files, image links, or product page links here</p>
-          <p className="text-xs text-muted-foreground mt-1">Supports drag/drop files, URLs, clipboard paste</p>
-        </CardContent>
-      </Card>
-
-      {/* Gallery */}
-      {images.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground text-sm">
-            No images yet. Drag & drop to add.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {images.map((img: any) => (
-            <Card key={img.id} className="overflow-hidden">
-              <div className="aspect-square bg-muted flex items-center justify-center">
-                {img.local_storage_url || img.original_url ? (
-                  <img
-                    src={img.local_storage_url || img.original_url}
-                    alt={img.alt_text || "Product image"}
-                    className="object-contain w-full h-full"
-                  />
-                ) : (
-                  <Image className="h-8 w-8 text-muted-foreground opacity-30" />
-                )}
-              </div>
-              <CardContent className="p-2">
-                <div className="flex items-center gap-1">
-                  {img.is_primary && <Badge className="text-[9px]">Primary</Badge>}
-                  <Badge variant="outline" className="text-[9px]">{img.image_status}</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <UniversalImageIntake images={images} productId={productId} />;
 }
-
 function EbayTab({ product, draft }: { product: any; draft: any }) {
   const title = draft?.title || "";
   const charCount = title.length;
