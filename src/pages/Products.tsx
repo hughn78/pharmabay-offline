@@ -135,7 +135,7 @@ export default function Products() {
             title: (p.source_product_name || "").substring(0, 80),
             brand: p.brand,
             ean: p.barcode,
-            channel_status: "queued",
+            channel_status: "ready",
             start_price: p.sell_price,
             quantity: p.quantity_available_for_ebay ?? Math.max(0, Number(p.stock_on_hand) || 0),
           };
