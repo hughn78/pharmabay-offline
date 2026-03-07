@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import ScanSearch from "./pages/ScanSearch";
 import Products from "./pages/Products";
 import ReviewQueue from "./pages/ReviewQueue";
@@ -28,18 +29,20 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<ScanSearch />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:id" element={<ProductEditor />} />
-            <Route path="/review" element={<ReviewQueue />} />
-            <Route path="/exports" element={<Exports />} />
-            <Route path="/import" element={<ImportStock />} />
-            <Route path="/sync" element={<ChannelSync />} />
-            <Route path="/reconciliation" element={<ShopifyReconciliation />} />
-            <Route path="/stock-sync" element={<ShopifyStockSync />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/audit" element={<AuditLog />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<ScanSearch />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/products/:id" element={<ProductEditor />} />
+              <Route path="/review" element={<ReviewQueue />} />
+              <Route path="/exports" element={<Exports />} />
+              <Route path="/import" element={<ImportStock />} />
+              <Route path="/sync" element={<ChannelSync />} />
+              <Route path="/reconciliation" element={<ShopifyReconciliation />} />
+              <Route path="/stock-sync" element={<ShopifyStockSync />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/audit" element={<AuditLog />} />
+            </Route>
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

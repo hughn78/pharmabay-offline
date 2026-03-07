@@ -23,6 +23,8 @@ import {
 import { Package, Search, Filter, MoreHorizontal, RefreshCw, Download } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
 import { fullComplianceCheck } from "@/lib/compliance-engine";
+import { buildSafeIlikeOr } from "@/lib/search-utils";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +33,7 @@ import Papa from "papaparse";
 export default function Products() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [complianceFilter, setComplianceFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRunningCompliance, setIsRunningCompliance] = useState(false);
@@ -77,7 +80,7 @@ export default function Products() {
   };
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", search, complianceFilter],
+    queryKey: ["products", debouncedSearch, complianceFilter],
     queryFn: async () => {
       let q = supabase
         .from("products")
@@ -85,8 +88,8 @@ export default function Products() {
         .order("updated_at", { ascending: false })
         .limit(100);
 
-      if (search) {
-        q = q.or(`source_product_name.ilike.%${search}%,barcode.ilike.%${search}%,sku.ilike.%${search}%`);
+      if (debouncedSearch) {
+        q = q.or(buildSafeIlikeOr(["source_product_name", "barcode", "sku"], debouncedSearch));
       }
       if (complianceFilter !== "all") {
         q = q.eq("compliance_status", complianceFilter);

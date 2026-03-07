@@ -245,117 +245,68 @@ export default function ImportStock() {
     return { newRows, updateRows, skippedRows, ambiguousRows };
   }
 
-  // ── Commit import ──
+  // ── Commit import (server-side atomic) ──
   const commitImport = async () => {
     if (!summary || !parseResult) return;
     setStage("importing");
     setIsImporting(true);
-    setProgress(0);
+    setProgress(10);
 
-    const result: ImportResult = {
-      newCount: 0,
-      updatedCount: 0,
-      skippedCount: summary.skippedRows.length + summary.ambiguousRows.length,
-      snapshotsCreated: 0,
-      errorCount: 0,
-      errors: [],
-    };
-
-    const allRows = [
-      ...summary.newRows.map((r) => ({ ...r, action: "insert" as const })),
-      ...summary.updateRows.map((r) => ({ ...r, action: "update" as const })),
+    const rows = [
+      ...summary.newRows.map((r) => ({
+        action: "insert" as const,
+        productData: r.productData,
+        sheetRow: r.row.sheetRow,
+      })),
+      ...summary.updateRows.map((r) => ({
+        action: "update" as const,
+        productData: r.productData,
+        matchedProductId: r.matchedProductId,
+        sheetRow: r.row.sheetRow,
+      })),
     ];
-    const total = allRows.length;
 
-    const { data: batchData } = await supabase
-      .from("import_batches")
-      .insert({
-        filename,
-        row_count: parseResult.validRows.length,
-        new_count: summary.newRows.length,
-        updated_count: summary.updateRows.length,
-        skipped_count: result.skippedCount,
-        error_count: 0,
-        import_notes: `First product row: ${parseResult.firstProductRow}, Footer rows removed: ${parseResult.footerRowsRemoved}`,
-      })
-      .select("id")
-      .single();
+    try {
+      setProgress(30);
 
-    const batchId = batchData?.id;
+      const res = await supabase.functions.invoke("import-commit", {
+        body: {
+          filename,
+          rows,
+          totalValid: parseResult.validRows.length,
+          skippedCount: summary.skippedRows.length + summary.ambiguousRows.length,
+          firstProductRow: parseResult.firstProductRow,
+          footerRowsRemoved: parseResult.footerRowsRemoved,
+        },
+      });
 
-    for (let i = 0; i < total; i++) {
-      const item = allRows[i];
-      try {
-        if (item.action === "update" && item.matchedProductId) {
-          await supabase
-            .from("products")
-            .update(item.productData)
-            .eq("id", item.matchedProductId);
-          result.updatedCount++;
+      setProgress(90);
 
-          await supabase.from("inventory_snapshots").insert({
-            product_id: item.matchedProductId,
-            snapshot_date: new Date().toISOString().split("T")[0],
-            stock_on_hand: item.productData.stock_on_hand,
-            sell_price: item.productData.sell_price,
-            cost_price: item.productData.cost_price,
-            stock_value: item.productData.stock_value,
-            units_sold_12m: item.productData.units_sold_12m,
-            source_batch_id: batchId,
-          });
-          result.snapshotsCreated++;
-        } else {
-          const { data: inserted } = await supabase
-            .from("products")
-            .insert({
-              ...item.productData,
-              compliance_status: "permitted",
-              enrichment_status: "pending",
-            })
-            .select("id")
-            .single();
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
 
-          result.newCount++;
+      const data = res.data;
+      const result: ImportResult = {
+        newCount: data.newCount || 0,
+        updatedCount: data.updatedCount || 0,
+        skippedCount: data.skippedCount || 0,
+        snapshotsCreated: data.snapshotsCreated || 0,
+        errorCount: data.errorCount || 0,
+        errors: data.errors || [],
+      };
 
-          if (inserted?.id) {
-            await supabase.from("inventory_snapshots").insert({
-              product_id: inserted.id,
-              snapshot_date: new Date().toISOString().split("T")[0],
-              stock_on_hand: item.productData.stock_on_hand,
-              sell_price: item.productData.sell_price,
-              cost_price: item.productData.cost_price,
-              stock_value: item.productData.stock_value,
-              units_sold_12m: item.productData.units_sold_12m,
-              source_batch_id: batchId,
-            });
-            result.snapshotsCreated++;
-          }
-        }
-      } catch (err) {
-        result.errorCount++;
-        result.errors.push(`Row ${item.row.sheetRow}: ${String(err)}`);
-      }
-      setProgress(Math.round(((i + 1) / total) * 100));
+      setImportResult(result);
+      setProgress(100);
+      setIsImporting(false);
+      setStage("done");
+      toast.success("Import complete", {
+        description: `${result.newCount} new, ${result.updatedCount} updated, ${result.snapshotsCreated} snapshots`,
+      });
+    } catch (err: any) {
+      setIsImporting(false);
+      setStage("preview");
+      toast.error("Import failed", { description: err.message });
     }
-
-    if (batchId) {
-      await supabase
-        .from("import_batches")
-        .update({
-          new_count: result.newCount,
-          updated_count: result.updatedCount,
-          skipped_count: result.skippedCount,
-          error_count: result.errorCount,
-        })
-        .eq("id", batchId);
-    }
-
-    setImportResult(result);
-    setIsImporting(false);
-    setStage("done");
-    toast.success("Import complete", {
-      description: `${result.newCount} new, ${result.updatedCount} updated, ${result.snapshotsCreated} snapshots`,
-    });
   };
 
   const toggleDiffExpand = (idx: number) => {

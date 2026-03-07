@@ -13,13 +13,47 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ComplianceRuleEditor } from "@/components/compliance/ComplianceRuleEditor";
 import { ShopifySettings } from "@/components/shopify/ShopifySettings";
+
+function useAppSetting(key: string) {
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["app-setting", key],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("*")
+        .eq("setting_key", key)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.setting_value as Record<string, any>) || {};
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (value: Record<string, any>) => {
+      const { error } = await supabase
+        .from("app_settings")
+        .update({ setting_value: value })
+        .eq("setting_key", key);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["app-setting", key] });
+      toast.success("Settings saved");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return { data: data || {}, isLoading, save: mutation.mutate, isSaving: mutation.isPending };
+}
 
 export default function Settings() {
   return (
@@ -41,46 +75,15 @@ export default function Settings() {
         </TabsList>
 
         <TabsContent value="pharmacy" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Pharmacy Details</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <Field label="Store Name" placeholder="PharmaBay Pharmacy" />
-              <Field label="Address" placeholder="123 Main St, Altona North VIC 3025" />
-              <Field label="ABN" placeholder="12 345 678 901" />
-              <Button>Save</Button>
-            </CardContent>
-          </Card>
+          <PharmacySettings />
         </TabsContent>
 
         <TabsContent value="pricing" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Pricing Defaults</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <Field label="Default Markup %" placeholder="30" type="number" />
-              <Field label="Minimum Margin %" placeholder="15" type="number" />
-              <Field label="Reserve Stock (units to keep for in-store)" placeholder="2" type="number" />
-              <Button>Save</Button>
-            </CardContent>
-          </Card>
+          <PricingSettings />
         </TabsContent>
 
         <TabsContent value="ebay" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> eBay Integration</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">Not Connected</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                eBay API credentials are stored as secure server-side secrets. Contact your administrator to configure.
-              </p>
-              <Separator />
-              <h4 className="font-medium text-sm">Shipping Defaults</h4>
-              <Field label="Location" placeholder="Altona North VIC 3025 AU" />
-              <Field label="Dispatch Time (days)" placeholder="2" type="number" />
-              <Button>Save</Button>
-            </CardContent>
-          </Card>
+          <EbaySettings />
         </TabsContent>
 
         <TabsContent value="shopify" className="mt-4">
@@ -111,11 +114,106 @@ export default function Settings() {
   );
 }
 
-function Field({ label, placeholder, type = "text" }: { label: string; placeholder: string; type?: string }) {
+function PharmacySettings() {
+  const { data, isLoading, save, isSaving } = useAppSetting("pharmacy_details");
+  const [form, setForm] = useState({ store_name: "", address: "", abn: "" });
+
+  useEffect(() => {
+    if (data) setForm({ store_name: data.store_name || "", address: data.address || "", abn: data.abn || "" });
+  }, [data]);
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base">Pharmacy Details</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <SettingField label="Store Name" value={form.store_name} onChange={(v) => setForm((p) => ({ ...p, store_name: v }))} placeholder="PharmaBay Pharmacy" />
+        <SettingField label="Address" value={form.address} onChange={(v) => setForm((p) => ({ ...p, address: v }))} placeholder="123 Main St, Altona North VIC 3025" />
+        <SettingField label="ABN" value={form.abn} onChange={(v) => setForm((p) => ({ ...p, abn: v }))} placeholder="12 345 678 901" />
+        <Button onClick={() => save(form)} disabled={isSaving}>
+          {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Save
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PricingSettings() {
+  const { data, isLoading, save, isSaving } = useAppSetting("pricing_defaults");
+  const [form, setForm] = useState({ default_markup_percent: "30", minimum_margin_percent: "15", reserve_stock: "2" });
+
+  useEffect(() => {
+    if (data) setForm({
+      default_markup_percent: String(data.default_markup_percent ?? 30),
+      minimum_margin_percent: String(data.minimum_margin_percent ?? 15),
+      reserve_stock: String(data.reserve_stock ?? 2),
+    });
+  }, [data]);
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base">Pricing Defaults</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <SettingField label="Default Markup %" value={form.default_markup_percent} onChange={(v) => setForm((p) => ({ ...p, default_markup_percent: v }))} type="number" placeholder="30" />
+        <SettingField label="Minimum Margin %" value={form.minimum_margin_percent} onChange={(v) => setForm((p) => ({ ...p, minimum_margin_percent: v }))} type="number" placeholder="15" />
+        <SettingField label="Reserve Stock (units)" value={form.reserve_stock} onChange={(v) => setForm((p) => ({ ...p, reserve_stock: v }))} type="number" placeholder="2" />
+        <Button onClick={() => save({
+          default_markup_percent: parseFloat(form.default_markup_percent) || 30,
+          minimum_margin_percent: parseFloat(form.minimum_margin_percent) || 15,
+          reserve_stock: parseInt(form.reserve_stock) || 2,
+        })} disabled={isSaving}>
+          {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Save
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EbaySettings() {
+  const { data, isLoading, save, isSaving } = useAppSetting("ebay_shipping");
+  const [form, setForm] = useState({ location: "", dispatch_time_days: "2" });
+
+  useEffect(() => {
+    if (data) setForm({
+      location: data.location || "",
+      dispatch_time_days: String(data.dispatch_time_days ?? 2),
+    });
+  }, [data]);
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> eBay Integration</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">Not Connected</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          eBay API credentials are stored as secure server-side secrets. Contact your administrator to configure.
+        </p>
+        <Separator />
+        <h4 className="font-medium text-sm">Shipping Defaults</h4>
+        <SettingField label="Location" value={form.location} onChange={(v) => setForm((p) => ({ ...p, location: v }))} placeholder="Altona North VIC 3025 AU" />
+        <SettingField label="Dispatch Time (days)" value={form.dispatch_time_days} onChange={(v) => setForm((p) => ({ ...p, dispatch_time_days: v }))} type="number" placeholder="2" />
+        <Button onClick={() => save({
+          location: form.location,
+          dispatch_time_days: parseInt(form.dispatch_time_days) || 2,
+        })} disabled={isSaving}>
+          {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Save
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SettingField({ label, value, onChange, placeholder, type = "text" }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
-      <Input placeholder={placeholder} type={type} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type={type} />
     </div>
   );
 }
