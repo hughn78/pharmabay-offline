@@ -1,124 +1,167 @@
 import * as XLSX from "xlsx";
 
-// ── Column mapping: FOS header variants → internal field names ──
-const HEADER_MAP: Record<string, string> = {
-  "product name": "source_product_name",
-  "product": "source_product_name",
-  "description": "source_product_name",
-  "item description": "source_product_name",
-  "item name": "source_product_name",
+// ── FOS column mapping: positional index → internal field name ──
+// Based on the real FOS export column order from Z Office POS
+export const FOS_COLUMNS = [
+  { index: 0, fosHeader: "Stock Name", field: "stock_name" },
+  { index: 1, fosHeader: "SOH", field: "soh" },
+  { index: 2, fosHeader: "APN", field: "apn" },
+  { index: 3, fosHeader: "PDE", field: "pde" },
+  { index: 4, fosHeader: "Avg Cost", field: "avg_cost" },
+  { index: 5, fosHeader: "Last Purchased", field: "last_purchased" },
+  { index: 6, fosHeader: "Last Sold", field: "last_sold" },
+  { index: 7, fosHeader: "Stock Value", field: "stock_value" },
+  { index: 8, fosHeader: "Sales Val", field: "sales_val" },
+  { index: 9, fosHeader: "Sales GP%", field: "sales_gp_percent" },
+  { index: 10, fosHeader: "Qty Sold", field: "qty_sold" },
+  { index: 11, fosHeader: "Qty Purchased", field: "qty_purchased" },
+  { index: 12, fosHeader: "Margin (end date)", field: "margin_end_date" },
+  { index: 13, fosHeader: "Categories", field: "categories" },
+  { index: 14, fosHeader: "Dept", field: "dept" },
+  { index: 15, fosHeader: "Mark up", field: "markup" },
+  { index: 16, fosHeader: "Sell Price", field: "sell_price" },
+  { index: 17, fosHeader: "Turn over", field: "turnover" },
+  { index: 18, fosHeader: "GP $ (end date)", field: "gp_dollar_end_date" },
+  { index: 19, fosHeader: "Margin (end date) 2", field: "margin_end_date_2" },
+  { index: 20, fosHeader: "Mark up (end date)", field: "markup_end_date" },
+  { index: 21, fosHeader: "RRP", field: "rrp" },
+] as const;
 
-  "stock on hand": "stock_on_hand",
-  "soh": "stock_on_hand",
-  "qty on hand": "stock_on_hand",
-  "on hand": "stock_on_hand",
+export type FosFieldName = (typeof FOS_COLUMNS)[number]["field"];
 
-  "barcode": "barcode",
-  "bar code": "barcode",
-  "ean": "barcode",
+/** All FOS field names in order */
+export const FOS_FIELD_NAMES = FOS_COLUMNS.map((c) => c.field);
 
-  "sku": "sku",
-  "product code": "sku",
-  "item code": "sku",
-  "code": "sku",
-
-  "cost price": "cost_price",
-  "cost": "cost_price",
-  "avg cost": "cost_price",
-  "average cost": "cost_price",
-
-  "last purchase date": "last_purchased_at",
-  "last purchased": "last_purchased_at",
-  "last purch date": "last_purchased_at",
-
-  "last sale date": "last_sold_at",
-  "last sold": "last_sold_at",
-  "last sold date": "last_sold_at",
-
+// ── Header text normalization for fuzzy matching ──
+const HEADER_NORMALIZE_MAP: Record<string, FosFieldName> = {
+  "stock name": "stock_name",
+  "soh": "soh",
+  "stock on hand": "soh",
+  "apn": "apn",
+  "barcode": "apn",
+  "bar code": "apn",
+  "ean": "apn",
+  "pde": "pde",
+  "product code": "pde",
+  "item code": "pde",
+  "sku": "pde",
+  "code": "pde",
+  "avg cost": "avg_cost",
+  "average cost": "avg_cost",
+  "cost price": "avg_cost",
+  "cost": "avg_cost",
+  "last purchased": "last_purchased",
+  "last purchase date": "last_purchased",
+  "last purch date": "last_purchased",
+  "last sold": "last_sold",
+  "last sold date": "last_sold",
+  "last sale date": "last_sold",
   "stock value": "stock_value",
   "value": "stock_value",
   "total value": "stock_value",
-
-  "total sales value": "total_sales_value_12m",
-  "sales value": "total_sales_value_12m",
-  "total sales": "total_sales_value_12m",
-  "sales value (12 months)": "total_sales_value_12m",
-
-  "total cogs": "total_cogs_12m",
-  "cogs": "total_cogs_12m",
-  "cost of goods": "total_cogs_12m",
-  "total cogs (12 months)": "total_cogs_12m",
-
-  "units sold": "units_sold_12m",
-  "qty sold": "units_sold_12m",
-  "units sold (12 months)": "units_sold_12m",
-
-  "units purchased": "units_purchased_12m",
-  "qty purchased": "units_purchased_12m",
-  "units purchased (12 months)": "units_purchased_12m",
-
-  "department": "department",
-  "dept": "department",
-
-  "category": "z_category",
-  "sub category": "z_category",
-  "sub-category": "z_category",
-
-  "gp%": "gross_profit_percent",
-  "gp %": "gross_profit_percent",
-  "gp": "gross_profit_percent",
-  "gross profit %": "gross_profit_percent",
-  "margin %": "gross_profit_percent",
-
-  "rrp": "sell_price",
+  "sales val": "sales_val",
+  "sales value": "sales_val",
+  "total sales value": "sales_val",
+  "total sales": "sales_val",
+  "sales gp%": "sales_gp_percent",
+  "sales gp %": "sales_gp_percent",
+  "gp%": "sales_gp_percent",
+  "gp %": "sales_gp_percent",
+  "gp": "sales_gp_percent",
+  "gross profit %": "sales_gp_percent",
+  "margin %": "sales_gp_percent",
+  "qty sold": "qty_sold",
+  "units sold": "qty_sold",
+  "qty purchased": "qty_purchased",
+  "units purchased": "qty_purchased",
+  "margin (end date)": "margin_end_date",
+  "margin": "margin_end_date",
+  "categories": "categories",
+  "category": "categories",
+  "sub category": "categories",
+  "sub-category": "categories",
+  "dept": "dept",
+  "department": "dept",
+  "mark up": "markup",
+  "markup": "markup",
   "sell price": "sell_price",
   "selling price": "sell_price",
-  "retail price": "sell_price",
   "price": "sell_price",
-
-  "supplier": "supplier",
-  "vendor": "supplier",
+  "turn over": "turnover",
+  "turnover": "turnover",
+  "gp $ (end date)": "gp_dollar_end_date",
+  "gp $": "gp_dollar_end_date",
+  "gp dollar": "gp_dollar_end_date",
+  "mark up (end date)": "markup_end_date",
+  "markup (end date)": "markup_end_date",
+  "rrp": "rrp",
+  "retail price": "rrp",
 };
 
-// Minimum required fields for a row to be "product-like"
-const REQUIRED_HEADER_FIELDS = ["source_product_name"];
-const IDENTITY_FIELDS = ["barcode", "sku"];
-
-export interface ParsedSheet {
-  /** All raw rows as arrays (no header interpretation) */
-  rawRows: any[][];
-  /** Auto-detected header row index (0-based) */
-  detectedHeaderRow: number;
-  /** Parsed data rows using the header at detectedHeaderRow */
-  parsedRows: ParsedProductRow[];
-  /** Mapped headers */
-  mappedHeaders: { original: string; mapped: string | null }[];
-  /** Sheet name */
-  sheetName: string;
-  /** Total raw row count */
-  totalRawRows: number;
+// ── Default parser config ──
+export interface FosParserConfig {
+  /** 1-based row number where product data starts (default: 4) */
+  firstProductRow: number;
+  /** Number of footer/total rows to remove from the end (default: 3) */
+  footerRowsToRemove: number;
 }
 
-export interface ParsedProductRow {
-  /** Index in the raw sheet (0-based) */
-  rawIndex: number;
-  /** Mapped field values */
-  fields: Record<string, string | number | null>;
-  /** Original row values keyed by original header */
-  original: Record<string, any>;
-  /** Skip reason, if any */
+export const DEFAULT_FOS_CONFIG: FosParserConfig = {
+  firstProductRow: 4,
+  footerRowsToRemove: 3,
+};
+
+// ── Types ──
+export interface FosParsedRow {
+  /** 1-based row number in original sheet */
+  sheetRow: number;
+  /** Parsed fields keyed by FOS field name */
+  fields: Record<FosFieldName, string | number | null>;
+  /** Raw cell values for debugging */
+  rawCells: any[];
+  /** Skip reason if this row was rejected */
   skipReason?: string;
-  /** Match type for upsert: 'barcode' | 'sku' | 'name' | 'new' */
-  matchType?: "barcode" | "sku" | "name" | "new";
-  /** Matched product id */
-  matchedProductId?: string;
-  /** Existing product data for diff */
-  existingProduct?: Record<string, any>;
+  /** Parsing warnings for this row */
+  warnings: string[];
+}
+
+export interface FosColumnMapping {
+  index: number;
+  fosHeader: string;
+  field: FosFieldName;
+  detectedHeader?: string;
+}
+
+export interface FosParseResult {
+  /** Worksheet name used */
+  sheetName: string;
+  /** Total raw rows in worksheet */
+  totalRawRows: number;
+  /** 1-based first product row used */
+  firstProductRow: number;
+  /** 1-based last usable product row (before footers) */
+  lastUsableRow: number;
+  /** Number of footer rows removed */
+  footerRowsRemoved: number;
+  /** Column mapping used */
+  columnMapping: FosColumnMapping[];
+  /** All parsed product rows (including skipped) */
+  allRows: FosParsedRow[];
+  /** Valid product rows only */
+  validRows: FosParsedRow[];
+  /** Skipped rows */
+  skippedRows: FosParsedRow[];
+  /** Global parsing warnings */
+  warnings: string[];
+  /** Raw header area rows for debug display */
+  headerAreaRows: any[][];
+  /** Sample raw-to-clean rows for debug */
+  sampleRows: { raw: any[]; clean: Record<string, any> }[];
 }
 
 /**
  * Read an XLSX/XLS/CSV file and return raw rows as arrays.
- * Barcodes are preserved as text by reading with `raw: true`.
+ * Barcodes are preserved as text by reading with raw: true.
  */
 export function readWorkbookRaw(buffer: ArrayBuffer): {
   rawRows: any[][];
@@ -128,7 +171,7 @@ export function readWorkbookRaw(buffer: ArrayBuffer): {
     type: "array",
     cellDates: true,
     cellText: true,
-    raw: true, // preserve raw cell values → barcodes stay as strings
+    raw: true,
   });
   const sheetName = wb.SheetNames[0];
   const sheet = wb.Sheets[sheetName];
@@ -142,140 +185,371 @@ export function readWorkbookRaw(buffer: ArrayBuffer): {
 }
 
 /**
- * Score a row to determine if it looks like a header row.
- * Higher score = more likely to be a header.
+ * Try to detect column mapping by examining the header area.
+ * Falls back to positional mapping from FOS_COLUMNS.
  */
-function scoreHeaderRow(row: any[]): number {
-  if (!row || row.length < 3) return 0;
-  let score = 0;
-  const knownHeaders = new Set(Object.keys(HEADER_MAP));
-  for (const cell of row) {
-    const val = String(cell ?? "").toLowerCase().trim();
-    if (val === "") continue;
-    if (knownHeaders.has(val)) {
-      score += 10;
-    } else if (
-      /^(product|stock|barcode|cost|price|category|department|sku|code|qty|units|sales|cogs|gp|rrp|value|date|supplier)/i.test(val)
-    ) {
-      score += 5;
-    }
-    // Headers are typically short text, not numbers
-    if (typeof cell === "string" && isNaN(Number(cell)) && val.length < 40) {
-      score += 1;
-    }
-  }
-  return score;
-}
-
-/**
- * Auto-detect the header row index by scoring each row.
- */
-export function detectHeaderRow(rawRows: any[][]): number {
-  let bestIdx = 0;
-  let bestScore = 0;
-  // Only scan first 20 rows
-  const limit = Math.min(rawRows.length, 20);
-  for (let i = 0; i < limit; i++) {
-    const s = scoreHeaderRow(rawRows[i]);
-    if (s > bestScore) {
-      bestScore = s;
-      bestIdx = i;
-    }
-  }
-  return bestIdx;
-}
-
-/**
- * Build header mapping from a raw row.
- */
-export function buildHeaderMapping(
-  headerRow: any[]
-): { original: string; mapped: string | null }[] {
-  return headerRow.map((cell) => {
-    const original = String(cell ?? "").trim();
-    const lower = original.toLowerCase();
-    const mapped = HEADER_MAP[lower] ?? null;
-    return { original, mapped };
-  });
-}
-
-/**
- * Parse data rows using a header mapping, applying skip rules.
- */
-export function parseDataRows(
+function detectColumnMapping(
   rawRows: any[][],
-  headerRowIndex: number,
-  mapping: { original: string; mapped: string | null }[]
-): ParsedProductRow[] {
-  const results: ParsedProductRow[] = [];
+  config: FosParserConfig
+): FosColumnMapping[] {
+  // Look at rows before the first product row for header text
+  const headerAreaEnd = config.firstProductRow - 1; // 0-based index
+  let bestHeaderRow = -1;
+  let bestScore = 0;
 
-  for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
+  for (let i = 0; i < Math.min(headerAreaEnd, rawRows.length); i++) {
     const row = rawRows[i];
-    if (!row || row.length === 0) continue;
+    if (!row) continue;
+    let score = 0;
+    for (const cell of row) {
+      const val = normalizeHeaderText(String(cell ?? ""));
+      if (HEADER_NORMALIZE_MAP[val]) score += 10;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestHeaderRow = i;
+    }
+  }
 
-    // Map fields
-    const fields: Record<string, string | number | null> = {};
-    const original: Record<string, any> = {};
-    for (let c = 0; c < mapping.length; c++) {
-      const { original: origHeader, mapped } = mapping[c];
-      const cellVal = row[c] ?? "";
-      original[origHeader] = cellVal;
-      if (mapped) {
-        // Preserve barcode as text string
-        if (mapped === "barcode") {
-          fields[mapped] = cellVal != null && String(cellVal).trim() !== ""
-            ? String(cellVal).trim()
-            : null;
-        } else {
-          fields[mapped] = cellVal != null && String(cellVal).trim() !== ""
-            ? String(cellVal).trim()
-            : null;
+  // If we found a header row with good matches, use text-based mapping
+  if (bestHeaderRow >= 0 && bestScore >= 20) {
+    const headerRow = rawRows[bestHeaderRow];
+    const mapping: FosColumnMapping[] = [];
+    const usedFields = new Set<FosFieldName>();
+    // Track margin occurrences for deduplication
+    let marginCount = 0;
+
+    for (let i = 0; i < headerRow.length; i++) {
+      const rawText = String(headerRow[i] ?? "").trim();
+      const normalized = normalizeHeaderText(rawText);
+      let field = HEADER_NORMALIZE_MAP[normalized] ?? null;
+
+      // Handle duplicate "margin" columns
+      if (field === "margin_end_date" && usedFields.has("margin_end_date")) {
+        field = "margin_end_date_2" as FosFieldName;
+      }
+      if (field === "markup" && usedFields.has("markup")) {
+        field = "markup_end_date" as FosFieldName;
+      }
+
+      if (field && !usedFields.has(field)) {
+        usedFields.add(field);
+        mapping.push({
+          index: i,
+          fosHeader: FOS_COLUMNS.find((c) => c.field === field)?.fosHeader ?? rawText,
+          field,
+          detectedHeader: rawText,
+        });
+      }
+    }
+
+    // Fill any missing fields from positional fallback
+    for (const col of FOS_COLUMNS) {
+      if (!usedFields.has(col.field) && col.index < (rawRows[bestHeaderRow]?.length ?? 0)) {
+        mapping.push({
+          index: col.index,
+          fosHeader: col.fosHeader,
+          field: col.field,
+          detectedHeader: String(rawRows[bestHeaderRow]?.[col.index] ?? ""),
+        });
+      }
+    }
+
+    return mapping.sort((a, b) => a.index - b.index);
+  }
+
+  // Fallback: use positional mapping
+  return FOS_COLUMNS.map((col) => ({
+    index: col.index,
+    fosHeader: col.fosHeader,
+    field: col.field,
+    detectedHeader: undefined,
+  }));
+}
+
+function normalizeHeaderText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[\r\n]+/g, " ") // handle wrapped headers
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// ── Cell value parsers ──
+
+function parseText(val: any): string | null {
+  if (val == null) return null;
+  const s = String(val).replace(/\s+/g, " ").trim();
+  return s === "" ? null : s;
+}
+
+function parseNumeric(val: any): { value: number | null; warning?: string } {
+  if (val == null || String(val).trim() === "") return { value: null };
+  const s = String(val).replace(/[,$%]/g, "").trim();
+  if (s === "" || s === "####") return { value: null, warning: s === "####" ? "Cell displayed as ####" : undefined };
+  const n = parseFloat(s);
+  if (isNaN(n)) return { value: null, warning: `Non-numeric value: "${String(val).substring(0, 30)}"` };
+  return { value: n };
+}
+
+function parseDate(val: any): { value: string | null; rawValue?: string; warning?: string } {
+  if (val == null || String(val).trim() === "") return { value: null };
+
+  // If it's already a Date object (from xlsx cellDates)
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return { value: null, warning: "Invalid date object" };
+    return { value: val.toISOString().split("T")[0] };
+  }
+
+  const s = String(val).trim();
+
+  // Try parsing common date formats
+  // DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD
+  const isoMatch = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return { value: d.toISOString().split("T")[0] };
+  }
+
+  const slashMatch = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
+  if (slashMatch) {
+    const [, a, b, c] = slashMatch;
+    const year = c.length === 2 ? `20${c}` : c;
+    // Assume DD/MM/YYYY for Australian POS
+    const d = new Date(`${year}-${b.padStart(2, "0")}-${a.padStart(2, "0")}`);
+    if (!isNaN(d.getTime())) return { value: d.toISOString().split("T")[0] };
+  }
+
+  // Excel serial date number
+  const num = parseFloat(s);
+  if (!isNaN(num) && num > 30000 && num < 60000) {
+    // Excel date serial → JS Date
+    const excelEpoch = new Date(1899, 11, 30);
+    const d = new Date(excelEpoch.getTime() + num * 86400000);
+    if (!isNaN(d.getTime())) return { value: d.toISOString().split("T")[0] };
+  }
+
+  return { value: null, rawValue: s, warning: `Unparseable date: "${s.substring(0, 30)}"` };
+}
+
+// ── Row classification ──
+
+function isFooterOrTotalRow(row: any[]): boolean {
+  if (!row || row.length === 0) return true;
+  const firstCell = String(row[0] ?? "").toLowerCase().trim();
+  if (
+    firstCell.startsWith("total") ||
+    firstCell.startsWith("grand total") ||
+    firstCell.startsWith("sub total") ||
+    firstCell.startsWith("subtotal") ||
+    firstCell.startsWith("report total") ||
+    firstCell.includes("generated on") ||
+    firstCell.includes("printed on") ||
+    firstCell.includes("page ") ||
+    firstCell.includes("end of report")
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isBlankRow(row: any[]): boolean {
+  return !row || row.every((c) => c == null || String(c).trim() === "");
+}
+
+function isProductRow(fields: Record<FosFieldName, string | number | null>): boolean {
+  // A row is a product if it has at least one meaningful identifier or value
+  const hasName = fields.stock_name != null;
+  const hasApn = fields.apn != null;
+  const hasPde = fields.pde != null;
+  const hasSoh = fields.soh != null && typeof fields.soh === "number";
+  const hasPrice =
+    (fields.sell_price != null && typeof fields.sell_price === "number") ||
+    (fields.avg_cost != null && typeof fields.avg_cost === "number");
+
+  return hasName || hasApn || hasPde || hasSoh || hasPrice;
+}
+
+// ── Main parser ──
+
+export function parseFosSpreadsheet(
+  rawRows: any[][],
+  sheetName: string,
+  config: FosParserConfig = DEFAULT_FOS_CONFIG
+): FosParseResult {
+  const warnings: string[] = [];
+
+  // Detect column mapping
+  const columnMapping = detectColumnMapping(rawRows, config);
+
+  // Calculate row boundaries (convert 1-based to 0-based)
+  const firstDataIdx = config.firstProductRow - 1; // 0-based index
+  const totalRows = rawRows.length;
+  const lastUsableIdx = Math.max(firstDataIdx, totalRows - config.footerRowsToRemove - 1);
+
+  if (firstDataIdx >= totalRows) {
+    warnings.push(`First product row (${config.firstProductRow}) is beyond sheet length (${totalRows} rows)`);
+  }
+
+  // Header area for debug
+  const headerAreaRows = rawRows.slice(0, firstDataIdx);
+
+  const allRows: FosParsedRow[] = [];
+  const validRows: FosParsedRow[] = [];
+  const skippedRows: FosParsedRow[] = [];
+
+  for (let i = firstDataIdx; i <= lastUsableIdx; i++) {
+    const row = rawRows[i];
+    const sheetRow = i + 1; // 1-based
+    const rowWarnings: string[] = [];
+
+    // Skip blank rows
+    if (isBlankRow(row)) {
+      const parsed: FosParsedRow = {
+        sheetRow,
+        fields: emptyFields(),
+        rawCells: row || [],
+        skipReason: "Blank row",
+        warnings: [],
+      };
+      skippedRows.push(parsed);
+      allRows.push(parsed);
+      continue;
+    }
+
+    // Skip footer/total rows
+    if (isFooterOrTotalRow(row)) {
+      const parsed: FosParsedRow = {
+        sheetRow,
+        fields: emptyFields(),
+        rawCells: row,
+        skipReason: "Footer/total row",
+        warnings: [],
+      };
+      skippedRows.push(parsed);
+      allRows.push(parsed);
+      continue;
+    }
+
+    // Parse each field
+    const fields = emptyFields();
+
+    for (const col of columnMapping) {
+      const cellVal = row[col.index];
+
+      switch (col.field) {
+        case "stock_name":
+        case "categories":
+        case "dept": {
+          fields[col.field] = parseText(cellVal);
+          break;
+        }
+        case "apn":
+        case "pde": {
+          // Always treat as text, preserve leading zeros
+          const txt = parseText(cellVal);
+          fields[col.field] = txt;
+          break;
+        }
+        case "last_purchased":
+        case "last_sold": {
+          const { value, rawValue, warning } = parseDate(cellVal);
+          fields[col.field] = value ?? rawValue ?? null;
+          if (warning) rowWarnings.push(`${col.field}: ${warning}`);
+          break;
+        }
+        default: {
+          // All other fields are numeric
+          const { value, warning } = parseNumeric(cellVal);
+          fields[col.field] = value;
+          if (warning) rowWarnings.push(`${col.field}: ${warning}`);
+          break;
         }
       }
     }
 
-    const parsed: ParsedProductRow = { rawIndex: i, fields, original };
+    const parsed: FosParsedRow = {
+      sheetRow,
+      fields,
+      rawCells: row,
+      warnings: rowWarnings,
+    };
 
-    // Skip rules
-    const name = String(fields.source_product_name ?? "").trim();
-    if (!name) {
-      parsed.skipReason = "Empty product name";
-      results.push(parsed);
-      continue;
-    }
-    if (name.startsWith("(OLD")) {
-      parsed.skipReason = "Starts with (OLD – discontinued";
-      results.push(parsed);
-      continue;
-    }
-
-    const soh = parseFloat(String(fields.stock_on_hand ?? "0")) || 0;
-    const unitsSold = parseInt(String(fields.units_sold_12m ?? "0")) || 0;
-    const lastSold = fields.last_sold_at;
-    if (soh <= 0 && unitsSold === 0 && !lastSold) {
-      parsed.skipReason = "No stock, no sales, no last sold date";
-      results.push(parsed);
-      continue;
+    // Determine if this is a valid product row
+    if (!isProductRow(fields)) {
+      parsed.skipReason = "Not a product row (no name, barcode, or numeric values)";
+      skippedRows.push(parsed);
+    } else {
+      // Additional skip rules
+      const name = String(fields.stock_name ?? "").trim();
+      if (name.startsWith("(OLD")) {
+        parsed.skipReason = "Starts with (OLD – discontinued";
+        skippedRows.push(parsed);
+      } else {
+        validRows.push(parsed);
+      }
     }
 
-    // Check for entirely blank rows (all cells empty)
-    const hasAnyContent = row.some(
-      (c: any) => c != null && String(c).trim() !== ""
-    );
-    if (!hasAnyContent) {
-      parsed.skipReason = "Blank row";
-      results.push(parsed);
-      continue;
-    }
-
-    results.push(parsed);
+    allRows.push(parsed);
   }
-  return results;
+
+  // Build sample rows for debug
+  const sampleRows = validRows.slice(0, 5).map((r) => ({
+    raw: r.rawCells,
+    clean: { ...r.fields },
+  }));
+
+  return {
+    sheetName,
+    totalRawRows: totalRows,
+    firstProductRow: config.firstProductRow,
+    lastUsableRow: lastUsableIdx + 1, // back to 1-based
+    footerRowsRemoved: config.footerRowsToRemove,
+    columnMapping,
+    allRows,
+    validRows,
+    skippedRows,
+    warnings,
+    headerAreaRows,
+    sampleRows,
+  };
 }
 
-/**
- * Normalize a product name for fuzzy matching.
- */
+function emptyFields(): Record<FosFieldName, string | number | null> {
+  const f: any = {};
+  for (const col of FOS_COLUMNS) {
+    f[col.field] = null;
+  }
+  return f;
+}
+
+// ── Database field mapping ──
+// Maps FOS fields to the products table columns
+
+export function fosRowToProductData(
+  row: FosParsedRow
+): Record<string, any> {
+  const f = row.fields;
+  return {
+    source_product_name: f.stock_name ? String(f.stock_name).trim() : null,
+    barcode: f.apn ? String(f.apn).trim() : null,
+    sku: f.pde ? String(f.pde).trim() : null,
+    stock_on_hand: typeof f.soh === "number" ? f.soh : parseFloat(String(f.soh ?? "0")) || 0,
+    cost_price: typeof f.avg_cost === "number" ? f.avg_cost : null,
+    sell_price: typeof f.sell_price === "number" ? f.sell_price : null,
+    stock_value: typeof f.stock_value === "number" ? f.stock_value : null,
+    department: f.dept ? String(f.dept).trim() : null,
+    z_category: f.categories ? String(f.categories).trim() : null,
+    units_sold_12m: typeof f.qty_sold === "number" ? Math.round(f.qty_sold) : 0,
+    units_purchased_12m: typeof f.qty_purchased === "number" ? Math.round(f.qty_purchased) : null,
+    total_sales_value_12m: typeof f.sales_val === "number" ? f.sales_val : null,
+    gross_profit_percent: typeof f.sales_gp_percent === "number" ? f.sales_gp_percent : null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+// ── Matching utilities (preserved from original) ──
+
 export function normalizeName(name: string): string {
   return name
     .toLowerCase()
@@ -284,10 +558,6 @@ export function normalizeName(name: string): string {
     .trim();
 }
 
-/**
- * Compute a simple similarity score between two normalized names.
- * Returns 0-1 where 1 = identical.
- */
 export function nameSimilarity(a: string, b: string): number {
   if (a === b) return 1;
   if (!a || !b) return 0;
@@ -295,10 +565,9 @@ export function nameSimilarity(a: string, b: string): number {
   const tokensB = new Set(b.split(" "));
   const intersection = [...tokensA].filter((t) => tokensB.has(t));
   const union = new Set([...tokensA, ...tokensB]);
-  return intersection.length / union.size; // Jaccard similarity
+  return intersection.length / union.size;
 }
 
-/** Threshold for considering a name match "high confidence" */
 export const NAME_MATCH_THRESHOLD = 0.85;
 
 /** Fields that are compared for diff display */
@@ -306,7 +575,6 @@ export const DIFF_FIELDS = [
   "source_product_name",
   "barcode",
   "sku",
-  "brand",
   "department",
   "z_category",
   "cost_price",
@@ -316,9 +584,7 @@ export const DIFF_FIELDS = [
   "units_sold_12m",
   "units_purchased_12m",
   "total_sales_value_12m",
-  "total_cogs_12m",
   "gross_profit_percent",
-  "supplier",
 ] as const;
 
 export type DiffField = (typeof DIFF_FIELDS)[number];
@@ -329,55 +595,18 @@ export interface FieldDiff {
   newValue: any;
 }
 
-/**
- * Compute field-level diffs between existing product and incoming data.
- */
 export function computeDiffs(
   existing: Record<string, any>,
-  incoming: Record<string, string | number | null>
+  incoming: Record<string, any>
 ): FieldDiff[] {
   const diffs: FieldDiff[] = [];
   for (const field of DIFF_FIELDS) {
     const oldVal = existing[field] ?? null;
     const newVal = incoming[field] ?? null;
-    if (newVal == null) continue; // don't diff if incoming doesn't have the field
-    const oldStr = String(oldVal ?? "");
-    const newStr = String(newVal ?? "");
-    if (oldStr !== newStr) {
+    if (newVal == null) continue;
+    if (String(oldVal ?? "") !== String(newVal ?? "")) {
       diffs.push({ field, oldValue: oldVal, newValue: newVal });
     }
   }
   return diffs;
-}
-
-/**
- * Build the product data object for insert/update.
- */
-export function buildProductData(
-  fields: Record<string, string | number | null>
-): Record<string, any> {
-  return {
-    source_product_name: fields.source_product_name
-      ? String(fields.source_product_name).trim()
-      : null,
-    barcode: fields.barcode ? String(fields.barcode).trim() : null,
-    sku: fields.sku ? String(fields.sku).trim() : null,
-    stock_on_hand: parseFloat(String(fields.stock_on_hand ?? "0")) || 0,
-    cost_price: parseFloat(String(fields.cost_price ?? "")) || null,
-    sell_price: parseFloat(String(fields.sell_price ?? "")) || null,
-    stock_value: parseFloat(String(fields.stock_value ?? "")) || null,
-    department: fields.department ? String(fields.department).trim() : null,
-    z_category: fields.z_category ? String(fields.z_category).trim() : null,
-    supplier: fields.supplier ? String(fields.supplier).trim() : null,
-    units_sold_12m: parseInt(String(fields.units_sold_12m ?? "0")) || 0,
-    units_purchased_12m:
-      parseInt(String(fields.units_purchased_12m ?? "0")) || null,
-    total_sales_value_12m:
-      parseFloat(String(fields.total_sales_value_12m ?? "")) || null,
-    total_cogs_12m:
-      parseFloat(String(fields.total_cogs_12m ?? "")) || null,
-    gross_profit_percent:
-      parseFloat(String(fields.gross_profit_percent ?? "")) || null,
-    updated_at: new Date().toISOString(),
-  };
 }
