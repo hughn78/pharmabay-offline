@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
+import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 
 export default function ProductEditor() {
   const { id } = useParams();
