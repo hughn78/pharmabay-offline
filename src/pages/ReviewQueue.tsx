@@ -49,7 +49,7 @@ async function fetchQueuedDraftsWithProducts(table: DraftTable) {
   const { data: drafts, error: draftsError } = await supabase
     .from(table)
     .select("*")
-    .eq("channel_status", "queued")
+    .eq("channel_status", "ready")
     .order("created_at", { ascending: false });
 
   if (draftsError) throw draftsError;

@@ -161,7 +161,7 @@ export default function Products() {
             title: p.source_product_name,
             vendor: p.brand,
             product_type: p.product_type || p.z_category,
-            channel_status: "queued",
+            channel_status: "ready",
             status: "draft",
           };
           if (existing) {
