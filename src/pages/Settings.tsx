@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ComplianceRuleEditor } from "@/components/compliance/ComplianceRuleEditor";
+import { ShopifySettings } from "@/components/shopify/ShopifySettings";
 
 export default function Settings() {
   return (
@@ -83,21 +84,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="shopify" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Store className="h-4 w-4" /> Shopify Integration</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">Not Connected</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Shopify credentials are stored as secure server-side secrets. Configure via Settings.
-              </p>
-              <Field label="Shop Domain" placeholder="my-pharmacy.myshopify.com" />
-              <Field label="API Version" placeholder="2024-01" />
-              <Button variant="outline">Test Connection</Button>
-              <Button>Save</Button>
-            </CardContent>
-          </Card>
+          <ShopifySettings />
         </TabsContent>
 
         <TabsContent value="google" className="mt-4">
