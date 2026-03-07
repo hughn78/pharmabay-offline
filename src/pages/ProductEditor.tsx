@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
+import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 
 export default function ProductEditor() {
   const { id } = useParams();
@@ -227,7 +228,7 @@ function GeneralTab({ product, onSave }: { product: any; onSave: (u: any) => voi
 function EnrichmentTab({ product }: { product: any }) {
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-6 space-y-4">
         <div className="flex items-center gap-3 mb-4">
           <Badge variant={product.enrichment_status === "complete" ? "default" : "outline"}>
             {product.enrichment_status || "pending"}
@@ -242,6 +243,11 @@ function EnrichmentTab({ product }: { product: any }) {
         <p className="text-sm text-muted-foreground">
           Enrichment pipeline will search trusted sources to fill in product details, images, and category suggestions.
         </p>
+
+        <Separator />
+
+        <AiDescriptionGenerator productId={product.id} target="general" />
+
         {product.enrichment_summary && (
           <div className="mt-4 bg-muted rounded-lg p-4 text-sm">
             <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(product.enrichment_summary, null, 2)}</pre>
@@ -298,6 +304,8 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
           <Textarea defaultValue={draft?.description_html || ""} rows={6} placeholder="Product description..." />
         </div>
 
+        <AiDescriptionGenerator productId={product.id} target="ebay" />
+
         <div className="flex gap-2">
           <Button>Save eBay Draft</Button>
           <Button variant="outline">Mark Ready</Button>
@@ -339,6 +347,8 @@ function ShopifyTab({ product, draft }: { product: any; draft: any }) {
         <Separator />
         <h4 className="font-medium text-sm">Google Shopping</h4>
         <FormField label="Google Product Category" value={draft?.google_product_category || ""} onChange={() => {}} />
+
+        <AiDescriptionGenerator productId={product.id} target="shopify" />
 
         <div className="flex gap-2">
           <Button>Save Shopify Draft</Button>

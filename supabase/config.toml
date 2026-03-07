@@ -2,3 +2,6 @@ project_id = "gvsssciqwzqehwjafqqr"
 
 [functions.shopify-stock-sync]
 verify_jwt = false
+
+[functions.ai-generate-description]
+verify_jwt = false
