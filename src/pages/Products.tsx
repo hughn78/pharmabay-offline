@@ -77,12 +77,19 @@ export default function Products() {
           <h1 className="text-2xl font-bold tracking-tight">Products</h1>
           <p className="text-muted-foreground text-sm">Manage your product catalog</p>
         </div>
-        {selectedIds.size > 0 && (
-          <div className="flex gap-2">
-            <Button size="sm" variant="secondary">Mark eBay Ready</Button>
-            <Button size="sm" variant="secondary">Mark Shopify Ready</Button>
-            <Button size="sm" variant="secondary">Export CSV</Button>
-          </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleRunCompliance} disabled={isRunningCompliance}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRunningCompliance ? "animate-spin" : ""}`} />
+            Run Compliance
+          </Button>
+          {selectedIds.size > 0 && (
+            <>
+              <Button size="sm" variant="secondary">Mark eBay Ready</Button>
+              <Button size="sm" variant="secondary">Mark Shopify Ready</Button>
+              <Button size="sm" variant="secondary">Export CSV</Button>
+            </>
+          )}
+        </div>
         )}
       </div>
 
