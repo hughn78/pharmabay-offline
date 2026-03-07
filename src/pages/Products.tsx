@@ -80,7 +80,7 @@ export default function Products() {
   };
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", search, complianceFilter],
+    queryKey: ["products", debouncedSearch, complianceFilter],
     queryFn: async () => {
       let q = supabase
         .from("products")
@@ -88,8 +88,8 @@ export default function Products() {
         .order("updated_at", { ascending: false })
         .limit(100);
 
-      if (search) {
-        q = q.or(`source_product_name.ilike.%${search}%,barcode.ilike.%${search}%,sku.ilike.%${search}%`);
+      if (debouncedSearch) {
+        q = q.or(buildSafeIlikeOr(["source_product_name", "barcode", "sku"], debouncedSearch));
       }
       if (complianceFilter !== "all") {
         q = q.eq("compliance_status", complianceFilter);
