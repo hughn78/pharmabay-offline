@@ -11,6 +11,8 @@ import {
   AlertTriangle, CheckCircle, XCircle, Download, ShoppingCart, Store, Trash2,
 } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
+import { LiveStatusBadges } from "@/components/products/LiveStatusBadges";
+import { useProductLiveStatus } from "@/hooks/useProductLiveStatus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
