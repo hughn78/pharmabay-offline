@@ -182,7 +182,7 @@ export function UniversalImageIntake({ images, productId }: Props) {
           addPendingItem({ type, label: value.split("/").pop() || "image", url: value, previewUrl: value });
           e.preventDefault();
         } else if (type === "page_url") {
-          addPendingItem({ type, label: new URL(value).hostname, url: value });
+          setExtractorUrl(value);
           e.preventDefault();
         }
         // If it's unknown text, let the paste proceed normally (e.g., in an input)
