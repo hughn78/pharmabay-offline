@@ -132,7 +132,6 @@ export default function Products() {
             </>
           )}
         </div>
-        )}
       </div>
 
       {/* Filters */}
