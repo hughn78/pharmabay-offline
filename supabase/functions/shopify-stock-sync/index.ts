@@ -587,7 +587,7 @@ function matchProducts(
         shopify_product_gid: matched.productGid,
         shopify_variant_gid: matched.variantGid,
         shopify_inventory_item_id: matched.inventoryItemId,
-        shopify_location_id: variantMap.all.length > 0 ? "" : "", // Will be set from connection
+        shopify_location_id: shopifyLocationId || "",
         shopify_product_title: matched.productTitle,
         shopify_variant_title: matched.variantTitle,
         shopify_sku: matched.sku,
