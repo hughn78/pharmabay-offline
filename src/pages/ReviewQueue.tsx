@@ -329,6 +329,13 @@ export default function ReviewQueue() {
   const blockedCount = reviewItems.filter((p: any) => p.compliance_status === "blocked").length;
   const reviewCount = reviewItems.filter((p: any) => p.compliance_status === "review_required").length;
 
+  // Collect all product IDs for live status lookup
+  const allProductIds = [
+    ...ebayDrafts.map((d: any) => d.product_id),
+    ...shopifyDrafts.map((d: any) => d.product_id),
+  ].filter(Boolean);
+  const { ebayMap, shopifyMap } = useProductLiveStatus(allProductIds);
+
   return (
     <div className="space-y-4">
       <div>
