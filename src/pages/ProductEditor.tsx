@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
+import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel";
 
 export default function ProductEditor() {
   const { id } = useParams();
@@ -144,6 +145,7 @@ export default function ProductEditor() {
           <TabsTrigger value="images" className="gap-1.5"><Image className="h-3.5 w-3.5" /> Images</TabsTrigger>
           <TabsTrigger value="ebay" className="gap-1.5"><ShoppingCart className="h-3.5 w-3.5" /> eBay</TabsTrigger>
           <TabsTrigger value="shopify" className="gap-1.5"><Store className="h-3.5 w-3.5" /> Shopify</TabsTrigger>
+          <TabsTrigger value="live" className="gap-1.5">🌐 Live Online</TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Audit</TabsTrigger>
         </TabsList>
 
@@ -165,6 +167,10 @@ export default function ProductEditor() {
 
         <TabsContent value="shopify" className="mt-4">
           <ShopifyTab product={product} draft={shopifyDraft} />
+        </TabsContent>
+
+        <TabsContent value="live" className="mt-4">
+          <LiveListingPanel productId={id!} />
         </TabsContent>
 
         <TabsContent value="audit" className="mt-4">
