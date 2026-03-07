@@ -1,0 +1,484 @@
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import {
+  ArrowLeft,
+  Save,
+  Package,
+  Sparkles,
+  Image,
+  ShoppingCart,
+  Store,
+  FileText,
+  Upload,
+} from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export default function ProductEditor() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: product, isLoading } = useQuery({
+    queryKey: ["product", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: ebayDraft } = useQuery({
+    queryKey: ["ebay-draft", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ebay_drafts")
+        .select("*")
+        .eq("product_id", id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: shopifyDraft } = useQuery({
+    queryKey: ["shopify-draft", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("shopify_drafts")
+        .select("*")
+        .eq("product_id", id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: images = [] } = useQuery({
+    queryKey: ["product-images", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("product_images")
+        .select("*")
+        .eq("product_id", id)
+        .order("sort_order");
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const updateProduct = useMutation({
+    mutationFn: async (updates: any) => {
+      const { error } = await supabase
+        .from("products")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      toast.success("Product saved");
+    },
+    onError: (err) => toast.error("Save failed", { description: String(err) }),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        Loading product...
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-muted-foreground">Product not found</p>
+        <Button variant="outline" className="mt-4" onClick={() => navigate("/products")}>
+          Back to Products
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-4">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/products")}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold tracking-tight truncate">
+            {product.source_product_name || "Untitled Product"}
+          </h1>
+          <div className="flex items-center gap-2 mt-1">
+            {product.barcode && (
+              <Badge variant="outline" className="font-mono text-xs">{product.barcode}</Badge>
+            )}
+            <ComplianceBadge status={product.compliance_status} />
+          </div>
+        </div>
+      </div>
+
+      <Tabs defaultValue="general">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="general" className="gap-1.5"><Package className="h-3.5 w-3.5" /> General</TabsTrigger>
+          <TabsTrigger value="enrichment" className="gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Enrichment</TabsTrigger>
+          <TabsTrigger value="images" className="gap-1.5"><Image className="h-3.5 w-3.5" /> Images</TabsTrigger>
+          <TabsTrigger value="ebay" className="gap-1.5"><ShoppingCart className="h-3.5 w-3.5" /> eBay</TabsTrigger>
+          <TabsTrigger value="shopify" className="gap-1.5"><Store className="h-3.5 w-3.5" /> Shopify</TabsTrigger>
+          <TabsTrigger value="audit" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Audit</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general" className="mt-4">
+          <GeneralTab product={product} onSave={(updates: any) => updateProduct.mutate(updates)} />
+        </TabsContent>
+
+        <TabsContent value="enrichment" className="mt-4">
+          <EnrichmentTab product={product} />
+        </TabsContent>
+
+        <TabsContent value="images" className="mt-4">
+          <ImagesTab images={images} productId={id!} />
+        </TabsContent>
+
+        <TabsContent value="ebay" className="mt-4">
+          <EbayTab product={product} draft={ebayDraft} />
+        </TabsContent>
+
+        <TabsContent value="shopify" className="mt-4">
+          <ShopifyTab product={product} draft={shopifyDraft} />
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-4">
+          <AuditTab productId={id!} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function GeneralTab({ product, onSave }: { product: any; onSave: (u: any) => void }) {
+  const [form, setForm] = useState({
+    source_product_name: product.source_product_name || "",
+    barcode: product.barcode || "",
+    sku: product.sku || "",
+    brand: product.brand || "",
+    department: product.department || "",
+    z_category: product.z_category || "",
+    cost_price: product.cost_price || "",
+    sell_price: product.sell_price || "",
+    stock_on_hand: product.stock_on_hand || "",
+    weight_grams: product.weight_grams || 200,
+    notes_internal: product.notes_internal || "",
+  });
+
+  const handleChange = (field: string, value: any) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <Card>
+      <CardContent className="pt-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Product Name" value={form.source_product_name} onChange={(v) => handleChange("source_product_name", v)} />
+          <FormField label="Barcode" value={form.barcode} onChange={(v) => handleChange("barcode", v)} mono />
+          <FormField label="SKU" value={form.sku} onChange={(v) => handleChange("sku", v)} mono />
+          <FormField label="Brand" value={form.brand} onChange={(v) => handleChange("brand", v)} />
+          <FormField label="Department" value={form.department} onChange={(v) => handleChange("department", v)} />
+          <FormField label="Category" value={form.z_category} onChange={(v) => handleChange("z_category", v)} />
+          <FormField label="Cost Price" value={form.cost_price} onChange={(v) => handleChange("cost_price", v)} type="number" />
+          <FormField label="Sell Price / RRP" value={form.sell_price} onChange={(v) => handleChange("sell_price", v)} type="number" />
+          <FormField label="Stock on Hand" value={form.stock_on_hand} onChange={(v) => handleChange("stock_on_hand", v)} type="number" />
+          <FormField label="Weight (grams)" value={form.weight_grams} onChange={(v) => handleChange("weight_grams", v)} type="number" />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm">Internal Notes</Label>
+          <Textarea
+            value={form.notes_internal}
+            onChange={(e) => handleChange("notes_internal", e.target.value)}
+            placeholder="Staff notes..."
+            rows={3}
+          />
+        </div>
+        <Button onClick={() => onSave(form)}>
+          <Save className="h-4 w-4 mr-2" /> Save Product
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EnrichmentTab({ product }: { product: any }) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Badge variant={product.enrichment_status === "complete" ? "default" : "outline"}>
+            {product.enrichment_status || "pending"}
+          </Badge>
+          {product.enrichment_confidence && (
+            <Badge variant="outline">{product.enrichment_confidence} confidence</Badge>
+          )}
+          <Button variant="outline" size="sm">
+            <Sparkles className="h-3.5 w-3.5 mr-1" /> Run Enrichment
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Enrichment pipeline will search trusted sources to fill in product details, images, and category suggestions.
+        </p>
+        {product.enrichment_summary && (
+          <div className="mt-4 bg-muted rounded-lg p-4 text-sm">
+            <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(product.enrichment_summary, null, 2)}</pre>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ImagesTab({ images, productId }: { images: any[]; productId: string }) {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    toast.info("Image intake coming soon", { description: "Drag & drop, paste, and URL extraction will be wired up" });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Drop Zone */}
+      <Card
+        className={`border-2 border-dashed transition-colors cursor-pointer ${isDragging ? "border-primary bg-primary/5" : "border-border"}`}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+      >
+        <CardContent className="py-10 text-center">
+          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-40" />
+          <p className="text-sm font-medium">Drop files, image links, or product page links here</p>
+          <p className="text-xs text-muted-foreground mt-1">Supports drag/drop files, URLs, clipboard paste</p>
+        </CardContent>
+      </Card>
+
+      {/* Gallery */}
+      {images.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground text-sm">
+            No images yet. Drag & drop to add.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {images.map((img: any) => (
+            <Card key={img.id} className="overflow-hidden">
+              <div className="aspect-square bg-muted flex items-center justify-center">
+                {img.local_storage_url || img.original_url ? (
+                  <img
+                    src={img.local_storage_url || img.original_url}
+                    alt={img.alt_text || "Product image"}
+                    className="object-contain w-full h-full"
+                  />
+                ) : (
+                  <Image className="h-8 w-8 text-muted-foreground opacity-30" />
+                )}
+              </div>
+              <CardContent className="p-2">
+                <div className="flex items-center gap-1">
+                  {img.is_primary && <Badge className="text-[9px]">Primary</Badge>}
+                  <Badge variant="outline" className="text-[9px]">{img.image_status}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EbayTab({ product, draft }: { product: any; draft: any }) {
+  const title = draft?.title || "";
+  const charCount = title.length;
+
+  return (
+    <Card>
+      <CardContent className="pt-6 space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Badge variant={draft?.channel_status === "ready" ? "default" : "outline"}>
+            {draft?.channel_status || "No Draft"}
+          </Badge>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm">eBay Title</Label>
+            <span className={`text-xs ${charCount > 80 ? "text-destructive" : "text-muted-foreground"}`}>
+              {charCount}/80
+            </span>
+          </div>
+          <Input defaultValue={title} placeholder="Brand + Product + Strength + Form + Pack Size" />
+        </div>
+
+        <FormField label="Subtitle" value={draft?.subtitle || ""} onChange={() => {}} />
+        <FormField label="Category ID" value={draft?.category_id || ""} onChange={() => {}} />
+        <FormField label="ePID" value={draft?.epid || ""} onChange={() => {}} />
+        <FormField label="MPN" value={draft?.mpn || ""} onChange={() => {}} />
+        <FormField label="Buy It Now Price" value={draft?.buy_it_now_price || ""} onChange={() => {}} type="number" />
+
+        {/* Price comparison */}
+        <Card className="bg-muted/50">
+          <CardContent className="pt-4 pb-3">
+            <h4 className="text-xs font-medium mb-2">Pricing Comparison</h4>
+            <div className="grid grid-cols-4 gap-2 text-center text-xs">
+              <div>
+                <div className="text-muted-foreground">Cost</div>
+                <div className="font-medium">${Number(product.cost_price || 0).toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">RRP</div>
+                <div className="font-medium">${Number(product.sell_price || 0).toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">eBay Price</div>
+                <div className="font-medium">${Number(draft?.buy_it_now_price || 0).toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Margin</div>
+                <div className="font-medium">—</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-1.5">
+          <Label className="text-sm">Description (HTML)</Label>
+          <Textarea defaultValue={draft?.description_html || ""} rows={6} placeholder="Product description..." />
+        </div>
+
+        <div className="flex gap-2">
+          <Button>Save eBay Draft</Button>
+          <Button variant="outline">Mark Ready</Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ShopifyTab({ product, draft }: { product: any; draft: any }) {
+  return (
+    <Card>
+      <CardContent className="pt-6 space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Badge variant={draft?.channel_status === "ready" ? "default" : "outline"}>
+            {draft?.channel_status || "No Draft"}
+          </Badge>
+          {draft?.shopify_product_gid && (
+            <Badge variant="outline" className="font-mono text-[10px]">{draft.shopify_product_gid}</Badge>
+          )}
+        </div>
+
+        <FormField label="Title" value={draft?.title || ""} onChange={() => {}} />
+        <FormField label="Handle" value={draft?.handle || ""} onChange={() => {}} />
+        <FormField label="Vendor" value={draft?.vendor || ""} onChange={() => {}} />
+        <FormField label="Product Type" value={draft?.product_type || ""} onChange={() => {}} />
+        <FormField label="Product Category" value={draft?.product_category || ""} onChange={() => {}} />
+
+        <div className="space-y-1.5">
+          <Label className="text-sm">Description (HTML)</Label>
+          <Textarea defaultValue={draft?.description_html || ""} rows={4} />
+        </div>
+
+        <Separator />
+        <h4 className="font-medium text-sm">SEO</h4>
+        <FormField label="SEO Title" value={draft?.seo_title || ""} onChange={() => {}} />
+        <FormField label="SEO Description" value={draft?.seo_description || ""} onChange={() => {}} />
+
+        <Separator />
+        <h4 className="font-medium text-sm">Google Shopping</h4>
+        <FormField label="Google Product Category" value={draft?.google_product_category || ""} onChange={() => {}} />
+
+        <div className="flex gap-2">
+          <Button>Save Shopify Draft</Button>
+          <Button variant="outline">Mark Ready</Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AuditTab({ productId }: { productId: string }) {
+  const { data: logs = [] } = useQuery({
+    queryKey: ["product-audit", productId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("change_log")
+        .select("*")
+        .eq("entity_id", productId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+  });
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        {logs.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">No audit history for this product.</p>
+        ) : (
+          <div className="space-y-2">
+            {logs.map((log: any) => (
+              <div key={log.id} className="flex items-start gap-3 p-2 border rounded text-sm">
+                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                  {new Date(log.created_at).toLocaleString()}
+                </div>
+                <Badge variant="outline" className="text-[10px] shrink-0">{log.action}</Badge>
+                <div className="text-xs truncate flex-1">
+                  {log.after_json ? JSON.stringify(log.after_json).slice(0, 100) : "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function FormField({ label, value, onChange, type = "text", mono = false }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; mono?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm">{label}</Label>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        type={type}
+        className={mono ? "font-mono" : ""}
+      />
+    </div>
+  );
+}
+
+function ComplianceBadge({ status }: { status?: string }) {
+  if (!status) return null;
+  const cls = status === "blocked" ? "status-blocked" : status === "review_required" ? "status-review" : "status-permitted";
+  return <Badge className={`text-[10px] ${cls}`}>{status.replace("_", " ")}</Badge>;
+}
