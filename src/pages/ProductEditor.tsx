@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
+import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel";
 
 export default function ProductEditor() {
   const { id } = useParams();
