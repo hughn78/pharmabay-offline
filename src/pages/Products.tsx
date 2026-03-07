@@ -118,34 +118,45 @@ export default function Products() {
     if (selected.length === 0) return;
 
     try {
-      const table = channel === "ebay" ? "ebay_drafts" : "shopify_drafts";
-      let upserted = 0;
+      let count = 0;
 
       for (const p of selected) {
-        const draftData = channel === "ebay"
-          ? {
-              product_id: p.id,
-              title: (p.source_product_name || "").substring(0, 80),
-              brand: p.brand,
-              ean: p.barcode,
-              channel_status: "ready",
-              start_price: p.sell_price,
-              quantity: p.quantity_available_for_ebay ?? p.stock_on_hand ?? 0,
-            }
-          : {
-              product_id: p.id,
-              title: p.source_product_name,
-              vendor: p.brand,
-              product_type: p.product_type || p.z_category,
-              channel_status: "ready",
-              status: "draft",
-            };
-
-        await supabase.from(table).upsert(draftData, { onConflict: "product_id" });
-        upserted++;
+        if (channel === "ebay") {
+          const { data: existing } = await supabase.from("ebay_drafts").select("id").eq("product_id", p.id).maybeSingle();
+          const draft = {
+            product_id: p.id,
+            title: (p.source_product_name || "").substring(0, 80),
+            brand: p.brand,
+            ean: p.barcode,
+            channel_status: "ready",
+            start_price: p.sell_price,
+            quantity: p.quantity_available_for_ebay ?? Math.max(0, Number(p.stock_on_hand) || 0),
+          };
+          if (existing) {
+            await supabase.from("ebay_drafts").update(draft).eq("id", existing.id);
+          } else {
+            await supabase.from("ebay_drafts").insert(draft);
+          }
+        } else {
+          const { data: existing } = await supabase.from("shopify_drafts").select("id").eq("product_id", p.id).maybeSingle();
+          const draft = {
+            product_id: p.id,
+            title: p.source_product_name,
+            vendor: p.brand,
+            product_type: p.product_type || p.z_category,
+            channel_status: "ready",
+            status: "draft",
+          };
+          if (existing) {
+            await supabase.from("shopify_drafts").update(draft).eq("id", existing.id);
+          } else {
+            await supabase.from("shopify_drafts").insert(draft);
+          }
+        }
+        count++;
       }
 
-      toast.success(`${upserted} products marked as ${channel === "ebay" ? "eBay" : "Shopify"} ready`);
+      toast.success(`${count} products marked as ${channel === "ebay" ? "eBay" : "Shopify"} ready`);
       queryClient.invalidateQueries({ queryKey: [channel === "ebay" ? "ebay-draft" : "shopify-draft"] });
     } catch (err: any) {
       toast.error(`Failed: ${err.message}`);
