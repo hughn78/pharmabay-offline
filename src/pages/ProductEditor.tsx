@@ -376,11 +376,66 @@ function EnrichmentTab({ product }: { product: any }) {
 
         <AiDescriptionGenerator productId={product.id} target="general" />
 
-        {product.enrichment_summary && (
-          <div className="mt-4 bg-muted rounded-lg p-4 text-sm">
-            <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(product.enrichment_summary, null, 2)}</pre>
-          </div>
-        )}
+        {product.enrichment_summary && (() => {
+          const s = product.enrichment_summary as Record<string, any>;
+          const fields: { label: string; key: string; type?: "text" | "html" | "tags" }[] = [
+            { label: "Title", key: "title" },
+            { label: "Subtitle", key: "subtitle" },
+            { label: "Brand", key: "brand" },
+            { label: "Product Type", key: "product_type" },
+            { label: "Product Form", key: "product_form" },
+            { label: "Description", key: "description", type: "html" },
+            { label: "Ingredients", key: "ingredients_summary" },
+            { label: "Directions", key: "directions_summary" },
+            { label: "Warnings", key: "warnings_summary" },
+            { label: "Claims", key: "claims_summary" },
+            { label: "SEO Title", key: "seo_title" },
+            { label: "SEO Description", key: "seo_description" },
+            { label: "eBay Category ID", key: "ebay_category_id" },
+            { label: "UPC", key: "upc" },
+            { label: "EPID", key: "epid" },
+            { label: "MPN", key: "mpn" },
+            { label: "Tags", key: "tags", type: "tags" },
+            { label: "Suggested Tags", key: "suggested_tags", type: "tags" },
+          ];
+          return (
+            <Card className="mt-4 border-primary/20 bg-primary/5">
+              <CardContent className="pt-4 space-y-3">
+                <span className="text-xs font-semibold uppercase text-primary">Last Enrichment Result</span>
+                {fields.map(({ label, key, type }) => {
+                  const val = s[key];
+                  if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                  if (type === "tags") {
+                    return (
+                      <div key={key}>
+                        <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(val as string[]).map((t: string, i: number) => (
+                            <Badge key={i} variant="outline" className="text-[10px]">{t}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  if (type === "html") {
+                    return (
+                      <div key={key}>
+                        <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
+                        <div className="text-sm mt-1 prose prose-sm max-w-none dark:prose-invert border rounded-md p-3 bg-background" dangerouslySetInnerHTML={{ __html: val }} />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={key}>
+                      <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
+                      <p className="text-sm">{String(val)}</p>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          );
+        })()}
       </CardContent>
     </Card>
   );
