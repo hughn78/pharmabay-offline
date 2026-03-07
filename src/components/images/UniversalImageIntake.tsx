@@ -210,7 +210,7 @@ export function UniversalImageIntake({ images, productId }: Props) {
     if (type === "image_url") {
       addPendingItem({ type, label: value.split("/").pop() || "image", url: value, previewUrl: value });
     } else if (type === "page_url") {
-      addPendingItem({ type, label: new URL(value).hostname, url: value });
+      setExtractorUrl(value);
     } else {
       toast.error("Enter a valid image URL or product page URL");
       return;
