@@ -26,6 +26,7 @@ import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel";
+import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
 
 export default function ProductEditor() {
   const { id } = useParams();
