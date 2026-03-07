@@ -17,6 +17,7 @@ import {
   ShoppingCart,
   Store,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -226,6 +227,43 @@ function GeneralTab({ product, onSave }: { product: any; onSave: (u: any) => voi
 }
 
 function EnrichmentTab({ product }: { product: any }) {
+  const queryClient = useQueryClient();
+
+  const enrichMutation = useMutation({
+    mutationFn: async () => {
+      const res = await supabase.functions.invoke("ai-generate-description", {
+        body: { product_id: product.id, target: "general" },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
+    },
+    onSuccess: async (data) => {
+      const gen = data.generated || {};
+      const updates: any = {
+        enrichment_status: "complete",
+        enrichment_confidence: "high",
+        enrichment_summary: gen,
+        updated_at: new Date().toISOString(),
+      };
+      if (gen.normalized_product_name) updates.normalized_product_name = gen.normalized_product_name;
+      if (gen.brand) updates.brand = gen.brand;
+      if (gen.product_type) updates.product_type = gen.product_type;
+      if (gen.product_form) updates.product_form = gen.product_form;
+      if (gen.ingredients_summary) updates.ingredients_summary = gen.ingredients_summary;
+      if (gen.directions_summary) updates.directions_summary = gen.directions_summary;
+      if (gen.warnings_summary) updates.warnings_summary = gen.warnings_summary;
+      if (gen.claims_summary) updates.claims_summary = gen.claims_summary;
+
+      const { error } = await supabase.from("products").update(updates).eq("id", product.id);
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+      toast.success("Enrichment complete — product updated");
+    },
+    onError: (err: Error) => toast.error("Enrichment failed", { description: err.message }),
+  });
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -236,8 +274,18 @@ function EnrichmentTab({ product }: { product: any }) {
           {product.enrichment_confidence && (
             <Badge variant="outline">{product.enrichment_confidence} confidence</Badge>
           )}
-          <Button variant="outline" size="sm">
-            <Sparkles className="h-3.5 w-3.5 mr-1" /> Run Enrichment
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => enrichMutation.mutate()}
+            disabled={enrichMutation.isPending}
+          >
+            {enrichMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+            )}
+            {enrichMutation.isPending ? "Enriching..." : "Run Enrichment"}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
