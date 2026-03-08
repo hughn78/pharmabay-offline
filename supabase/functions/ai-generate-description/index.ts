@@ -107,7 +107,7 @@ Product information:
 - Warnings: ${warnings}
 - Claims: ${claims}
 
-Research the manufacturer's website and similar vendor listings for this product to generate an accurate, comprehensive description. Include key benefits, usage instructions, and any important product specifications that would help buyers make a purchase decision.`;
+Using only the product information provided below, write a detailed and accurate description. Do not invent specifications not present in the data.`;
 
     } else if (target === "shopify") {
       systemPrompt = `You are an expert Shopify product description writer for an online health and pharmacy store.
@@ -140,7 +140,7 @@ Product information:
 - Warnings: ${warnings}
 - Claims: ${claims}
 
-Research the manufacturer's website and similar vendor listings for this product to generate an accurate, comprehensive description. Include key benefits, usage instructions, and any important product specifications.`;
+Using only the product information provided below, write a detailed and accurate description. Do not invent specifications not present in the data.`;
 
     } else {
       // General enrichment
@@ -181,7 +181,7 @@ Product information available:
 - Existing Warnings: ${warnings}
 - Existing Claims: ${claims}
 
-Research the manufacturer's website and prominent vendors of similar products to fill in any missing information and generate an accurate, detailed description.`;
+Using only the product information provided above, fill in any missing fields and generate an accurate, detailed description. Do not invent specifications not present in the data.`;
     }
 
     // Call Lovable AI Gateway

@@ -2,12 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ComplianceBadge } from "@/components/ui/ComplianceBadge";
 import { Button } from "@/components/ui/button";
 import { Scan, Search, Package, Clock, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RapidReviewModal } from "@/components/scan/RapidReviewModal";
+import { buildSafeIlikeOr } from "@/lib/search-utils";
 
 export default function ScanSearch() {
   const [barcode, setBarcode] = useState("");
@@ -72,9 +74,7 @@ export default function ScanSearch() {
       const { data, error } = await supabase
         .from("products")
         .select("id, source_product_name, barcode, sku, brand, stock_on_hand, compliance_status")
-        .or(
-          `source_product_name.ilike.%${searchQuery}%,barcode.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,brand.ilike.%${searchQuery}%`
-        )
+        .or(buildSafeIlikeOr(["source_product_name", "barcode", "sku", "brand"], searchQuery))
         .limit(20);
 
       if (error) throw error;
@@ -218,14 +218,3 @@ export default function ScanSearch() {
   );
 }
 
-function ComplianceBadge({ status }: { status?: string }) {
-  if (!status) return null;
-  const map: Record<string, string> = {
-    permitted: "status-permitted",
-    review_required: "status-review",
-    blocked: "status-blocked",
-  };
-  return (
-    <Badge className={`text-[10px] ${map[status] || ""}`}>{status?.replace("_", " ")}</Badge>
-  );
-}

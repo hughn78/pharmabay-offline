@@ -78,7 +78,21 @@ function ExportSection({ title, icon, batches, isLoading }: {
                     {b.product_count} products • {new Date(b.created_at).toLocaleDateString()}
                   </div>
                 </div>
-                <Button size="sm" variant="outline" disabled={!b.file_url}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!b.file_url}
+                  onClick={() => {
+                    if (b.file_url) {
+                      const a = document.createElement('a');
+                      a.href = b.file_url;
+                      a.download = b.batch_name || 'export.csv';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    }
+                  }}
+                >
                   <Download className="h-3.5 w-3.5 mr-1" /> Download
                 </Button>
               </div>
