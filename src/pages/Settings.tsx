@@ -20,6 +20,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ComplianceRuleEditor } from "@/components/compliance/ComplianceRuleEditor";
 import { ShopifySettings } from "@/components/shopify/ShopifySettings";
+import { EbaySettings } from "@/components/ebay/EbaySettings";
 
 function useAppSetting(key: string) {
   const queryClient = useQueryClient();
