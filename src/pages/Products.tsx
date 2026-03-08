@@ -57,22 +57,25 @@ export default function Products() {
     if (targets.length === 0) return;
 
     setIsRunningCompliance(true);
-    let updated = 0;
     try {
-      for (const p of targets) {
-        const result = fullComplianceCheck(p, complianceRules);
-        if (result.status !== p.compliance_status) {
-          await supabase
-            .from("products")
-            .update({
-              compliance_status: result.status,
-              compliance_reasons: result.reasons,
-            })
-            .eq("id", p.id);
-          updated++;
+      const updates = targets
+        .map((p: any) => ({ p, result: fullComplianceCheck(p, complianceRules) }))
+        .filter(({ p, result }) => result.status !== p.compliance_status)
+        .map(({ p, result }) => ({
+          id: p.id,
+          compliance_status: result.status,
+          compliance_reasons: result.reasons,
+        }));
+
+      if (updates.length > 0) {
+        for (let i = 0; i < updates.length; i += 100) {
+          const chunk = updates.slice(i, i + 100);
+          const { error } = await supabase.from("products").upsert(chunk, { onConflict: "id" });
+          if (error) throw error;
         }
       }
-      toast.success(`Compliance evaluated: ${updated} products updated`);
+
+      toast.success(`Compliance evaluated: ${updates.length} products updated`);
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
     } catch (err: any) {

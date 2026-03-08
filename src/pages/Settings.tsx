@@ -92,15 +92,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="google" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Search className="h-4 w-4" /> Google Custom Search</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Google API credentials are stored as secure server-side secrets.
-              </p>
-              <Button variant="outline">Test Search</Button>
-            </CardContent>
-          </Card>
+          <GoogleSettings />
         </TabsContent>
 
         <TabsContent value="compliance" className="mt-4">

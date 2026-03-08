@@ -181,7 +181,7 @@ Product information available:
 - Existing Warnings: ${warnings}
 - Existing Claims: ${claims}
 
-Research the manufacturer's website and prominent vendors of similar products to fill in any missing information and generate an accurate, detailed description.`;
+Using only the product information provided above, fill in any missing fields and generate an accurate, detailed description. Do not invent specifications not present in the data.`;
     }
 
     // Call Lovable AI Gateway

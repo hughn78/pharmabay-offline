@@ -73,9 +73,7 @@ export default function ScanSearch() {
       const { data, error } = await supabase
         .from("products")
         .select("id, source_product_name, barcode, sku, brand, stock_on_hand, compliance_status")
-        .or(
-          `source_product_name.ilike.%${searchQuery}%,barcode.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,brand.ilike.%${searchQuery}%`
-        )
+        .or(buildSafeIlikeOr(["source_product_name", "barcode", "sku", "brand"], searchQuery))
         .limit(20);
 
       if (error) throw error;
