@@ -302,7 +302,7 @@ serve(async (req) => {
         {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
             "Content-Language": "en-AU",
           },
