@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { PageImageExtractorModal } from "./PageImageExtractorModal";
+import { ImageQualityBadge } from "./ImageQualityBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,10 @@ import { useQueryClient } from "@tanstack/react-query";
 interface Props {
   images: any[];
   productId: string;
+  metas?: Map<string, import("@/hooks/useImageDimensions").ImageMeta>;
+  bestImageId?: string | null;
+  selectedImageIds?: string[];
+  onToggleSelect?: (id: string) => void;
 }
 
 type DetectedType = "file" | "image_url" | "page_url" | "html_snippet" | "unknown";
@@ -75,7 +80,7 @@ function extractImageUrlsFromHtml(html: string): string[] {
   return [...new Set(urls)];
 }
 
-export function UniversalImageIntake({ images, productId }: Props) {
+export function UniversalImageIntake({ images, productId, metas, bestImageId, selectedImageIds, onToggleSelect }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [manualUrl, setManualUrl] = useState("");
@@ -504,9 +509,17 @@ export function UniversalImageIntake({ images, productId }: Props) {
         </Card>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {images.map((img: any) => (
-            <Card key={img.id} className="overflow-hidden group relative">
-              <div className="aspect-square bg-muted flex items-center justify-center">
+          {images.map((img: any) => {
+            const meta = metas?.get(img.id);
+            const isBest = bestImageId === img.id;
+            const isSelected = selectedImageIds?.includes(img.id);
+            return (
+            <Card
+              key={img.id}
+              className={`overflow-hidden group relative cursor-pointer transition-all ${isSelected ? "ring-2 ring-primary" : ""}`}
+              onClick={() => onToggleSelect?.(img.id)}
+            >
+              <div className="aspect-square bg-muted flex items-center justify-center relative">
                 {img.local_storage_url || img.original_url ? (
                   <img
                     src={img.local_storage_url || img.original_url}
@@ -516,8 +529,22 @@ export function UniversalImageIntake({ images, productId }: Props) {
                 ) : (
                   <ImageIcon className="h-8 w-8 text-muted-foreground opacity-30" />
                 )}
+                {isSelected && (
+                  <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                    <CheckCircle className="h-3.5 w-3.5 text-primary-foreground" />
+                  </div>
+                )}
               </div>
-              <CardContent className="p-2 space-y-1.5">
+              <CardContent className="p-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                {/* Quality info */}
+                <ImageQualityBadge meta={meta} isBest={isBest} />
+
+                {/* Source type */}
+                <div className="text-[9px] text-muted-foreground truncate">
+                  {img.source_type === "upload" ? "Uploaded" : img.source_type === "url" ? "URL" : img.source_type === "branded" ? "Branded" : "Page extract"}
+                  {img.source_page_url && (() => { try { return " · " + new URL(img.source_page_url).hostname; } catch { return ""; } })()}
+                </div>
+
                 <div className="flex items-center gap-1 flex-wrap">
                   {img.is_primary && (
                     <Badge className="text-[9px] gap-0.5">
@@ -585,7 +612,8 @@ export function UniversalImageIntake({ images, productId }: Props) {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
