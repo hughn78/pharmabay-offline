@@ -79,7 +79,7 @@ function extractImageUrlsFromHtml(html: string): string[] {
   return [...new Set(urls)];
 }
 
-export function UniversalImageIntake({ images, productId }: Props) {
+export function UniversalImageIntake({ images, productId, metas, bestImageId, selectedImageIds, onToggleSelect }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [manualUrl, setManualUrl] = useState("");
