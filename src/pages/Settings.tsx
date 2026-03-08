@@ -73,6 +73,7 @@ export default function Settings() {
           <TabsTrigger value="google">Google</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="data">Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pharmacy" className="mt-4">
