@@ -11,6 +11,7 @@ import {
   ArrowLeftRight,
   ArrowUpDown,
   FileDown,
+  History,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -35,7 +36,7 @@ const navItems = [
   { title: "Scan / Search", url: "/", icon: Scan },
   { title: "Products", url: "/products", icon: Package },
   { title: "Review Queue", url: "/review", icon: AlertTriangle },
-  { title: "Exports", url: "/exports", icon: Download },
+  { title: "Export History", url: "/exports", icon: Download },
   { title: "Import Stock", url: "/import", icon: Upload },
   { title: "Channel Sync", url: "/sync", icon: RefreshCw },
   { title: "Reconciliation", url: "/reconciliation", icon: ArrowLeftRight },
