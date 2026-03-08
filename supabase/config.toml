@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.scrape-and-generate]
 verify_jwt = false
+
+[functions.shopify-sync-products]
+verify_jwt = false
+
+[functions.shopify-connect]
+verify_jwt = false
+
+[functions.extract-page-images]
+verify_jwt = false
