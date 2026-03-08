@@ -333,9 +333,21 @@ export default function ImportStock() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Import Stock</h1>
         <p className="text-muted-foreground text-sm">
-          Upload Z Office FOS stock reports (.xlsx, .xls, .csv)
+          Import FOS stock reports or wholesaler pricebooks
         </p>
       </div>
+
+      <Tabs defaultValue="fos" className="w-full">
+        <TabsList>
+          <TabsTrigger value="fos">FOS Stock Report</TabsTrigger>
+          <TabsTrigger value="pricebooks">Wholesaler Pricebooks</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pricebooks">
+          <PricebookImportPanel />
+        </TabsContent>
+
+        <TabsContent value="fos">
 
       {/* Stage indicator */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -899,6 +911,8 @@ export default function ImportStock() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
