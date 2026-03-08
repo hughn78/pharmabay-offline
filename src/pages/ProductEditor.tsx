@@ -250,7 +250,6 @@ function EnrichmentTab({ product }: { product: any }) {
       const gen = data.generated || {};
       const now = new Date().toISOString();
 
-      // 1. Update master product
       const updates: any = {
         enrichment_status: "complete",
         enrichment_confidence: "high",
@@ -269,7 +268,6 @@ function EnrichmentTab({ product }: { product: any }) {
       const { error } = await supabase.from("products").update(updates).eq("id", product.id);
       if (error) throw error;
 
-      // 2. Build eBay title from enriched data
       const productName = gen.normalized_product_name || product.source_product_name || "";
       const brand = gen.brand || product.brand || "";
       const strength = product.strength || "";
@@ -277,45 +275,25 @@ function EnrichmentTab({ product }: { product: any }) {
       const ebayTitle = [brand.toUpperCase(), productName.toUpperCase(), strength, packSize]
         .filter(Boolean).join(" ").slice(0, 80);
 
-      // Build description HTML for eBay
       const ebayDescParts: string[] = [];
       if (gen.description || gen.description_html) {
         ebayDescParts.push(gen.description_html || `<p>${gen.description}</p>`);
       }
-      if (gen.directions_summary) {
-        ebayDescParts.push(`<h3>Directions</h3><p>${gen.directions_summary}</p>`);
-      }
-      if (gen.ingredients_summary) {
-        ebayDescParts.push(`<h3>Ingredients</h3><p>${gen.ingredients_summary}</p>`);
-      }
-      if (gen.warnings_summary) {
-        ebayDescParts.push(`<h3>Warnings</h3><p>${gen.warnings_summary}</p>`);
-      }
+      if (gen.directions_summary) ebayDescParts.push(`<h3>Directions</h3><p>${gen.directions_summary}</p>`);
+      if (gen.ingredients_summary) ebayDescParts.push(`<h3>Ingredients</h3><p>${gen.ingredients_summary}</p>`);
+      if (gen.warnings_summary) ebayDescParts.push(`<h3>Warnings</h3><p>${gen.warnings_summary}</p>`);
 
       const ebayDraft: any = {
-        product_id: product.id,
-        title: ebayTitle,
-        subtitle: gen.subtitle || null,
-        brand: brand,
-        description_html: ebayDescParts.join("\n") || null,
-        mpn: gen.mpn || null,
-        epid: gen.epid || null,
-        upc: gen.upc || null,
-        ean: product.barcode || null,
-        category_id: gen.ebay_category_id || null,
-        updated_at: now,
+        product_id: product.id, title: ebayTitle, subtitle: gen.subtitle || null,
+        brand, description_html: ebayDescParts.join("\n") || null,
+        mpn: gen.mpn || null, epid: gen.epid || null, upc: gen.upc || null,
+        ean: product.barcode || null, category_id: gen.ebay_category_id || null, updated_at: now,
       };
 
-      // Upsert eBay draft
-      const { data: existingEbay } = await supabase
-        .from("ebay_drafts").select("id").eq("product_id", product.id).maybeSingle();
-      if (existingEbay?.id) {
-        await supabase.from("ebay_drafts").update(ebayDraft).eq("id", existingEbay.id);
-      } else {
-        await supabase.from("ebay_drafts").insert(ebayDraft);
-      }
+      const { data: existingEbay } = await supabase.from("ebay_drafts").select("id").eq("product_id", product.id).maybeSingle();
+      if (existingEbay?.id) { await supabase.from("ebay_drafts").update(ebayDraft).eq("id", existingEbay.id); }
+      else { await supabase.from("ebay_drafts").insert(ebayDraft); }
 
-      // 3. Build Shopify draft
       const shopifyTitle = gen.normalized_product_name || product.source_product_name || "";
       const handle = shopifyTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       const shopifyDesc = ebayDescParts.join("\n") || null;
@@ -323,27 +301,16 @@ function EnrichmentTab({ product }: { product: any }) {
       const seoDesc = (gen.claims_summary || gen.description || shopifyTitle).slice(0, 160);
 
       const shopifyDraft: any = {
-        product_id: product.id,
-        title: shopifyTitle,
-        handle,
-        vendor: brand || null,
+        product_id: product.id, title: shopifyTitle, handle, vendor: brand || null,
         product_type: gen.product_type || product.z_category || null,
-        description_html: shopifyDesc,
-        seo_title: seoTitle,
-        seo_description: seoDesc,
-        tags: gen.suggested_tags || gen.tags || null,
-        updated_at: now,
+        description_html: shopifyDesc, seo_title: seoTitle, seo_description: seoDesc,
+        tags: gen.suggested_tags || gen.tags || null, updated_at: now,
       };
 
-      const { data: existingShopify } = await supabase
-        .from("shopify_drafts").select("id").eq("product_id", product.id).maybeSingle();
-      if (existingShopify?.id) {
-        await supabase.from("shopify_drafts").update(shopifyDraft).eq("id", existingShopify.id);
-      } else {
-        await supabase.from("shopify_drafts").insert(shopifyDraft);
-      }
+      const { data: existingShopify } = await supabase.from("shopify_drafts").select("id").eq("product_id", product.id).maybeSingle();
+      if (existingShopify?.id) { await supabase.from("shopify_drafts").update(shopifyDraft).eq("id", existingShopify.id); }
+      else { await supabase.from("shopify_drafts").insert(shopifyDraft); }
 
-      // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ["product", product.id] });
       queryClient.invalidateQueries({ queryKey: ["ebay-draft", product.id] });
       queryClient.invalidateQueries({ queryKey: ["shopify-draft", product.id] });
@@ -353,99 +320,108 @@ function EnrichmentTab({ product }: { product: any }) {
   });
 
   return (
-    <Card>
-      <CardContent className="pt-6 space-y-4">
-        <div className="flex items-center gap-3 mb-4">
-          <Badge variant={product.enrichment_status === "complete" ? "default" : "outline"}>
-            {product.enrichment_status || "pending"}
-          </Badge>
-          {product.enrichment_confidence && (
-            <Badge variant="outline">{product.enrichment_confidence} confidence</Badge>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => enrichMutation.mutate()}
-            disabled={enrichMutation.isPending}
-          >
-            {enrichMutation.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5 mr-1" />
+    <div className="space-y-4">
+      {/* Source Pages Panel */}
+      <SourcePagesPanel product={product} />
+
+      {/* Image Upload */}
+      <EnrichmentImageUpload productId={product.id} />
+
+      {/* Existing Enrichment Controls */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <Badge variant={product.enrichment_status === "complete" ? "default" : "outline"}>
+              {product.enrichment_status || "pending"}
+            </Badge>
+            {product.enrichment_confidence && (
+              <Badge variant="outline">{product.enrichment_confidence} confidence</Badge>
             )}
-            {enrichMutation.isPending ? "Enriching..." : "Run Enrichment"}
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Enrichment pipeline will search trusted sources to fill in product details, images, and category suggestions.
-        </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => enrichMutation.mutate()}
+              disabled={enrichMutation.isPending}
+            >
+              {enrichMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 mr-1" />
+              )}
+              {enrichMutation.isPending ? "Enriching..." : "Run Enrichment"}
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Enrichment pipeline will search trusted sources to fill in product details, images, and category suggestions.
+          </p>
 
-        <Separator />
+          <Separator />
 
-        <AiDescriptionGenerator productId={product.id} target="general" />
+          <AiDescriptionGenerator productId={product.id} target="general" />
 
-        {product.enrichment_summary && (() => {
-          const s = product.enrichment_summary as Record<string, any>;
-          const fields: { label: string; key: string; type?: "text" | "html" | "tags" }[] = [
-            { label: "Title", key: "title" },
-            { label: "Subtitle", key: "subtitle" },
-            { label: "Brand", key: "brand" },
-            { label: "Product Type", key: "product_type" },
-            { label: "Product Form", key: "product_form" },
-            { label: "Description", key: "description", type: "html" },
-            { label: "Ingredients", key: "ingredients_summary" },
-            { label: "Directions", key: "directions_summary" },
-            { label: "Warnings", key: "warnings_summary" },
-            { label: "Claims", key: "claims_summary" },
-            { label: "SEO Title", key: "seo_title" },
-            { label: "SEO Description", key: "seo_description" },
-            { label: "eBay Category ID", key: "ebay_category_id" },
-            { label: "UPC", key: "upc" },
-            { label: "EPID", key: "epid" },
-            { label: "MPN", key: "mpn" },
-            { label: "Tags", key: "tags", type: "tags" },
-            { label: "Suggested Tags", key: "suggested_tags", type: "tags" },
-          ];
-          return (
-            <Card className="mt-4 border-primary/20 bg-primary/5">
-              <CardContent className="pt-4 space-y-3">
-                <span className="text-xs font-semibold uppercase text-primary">Last Enrichment Result</span>
-                {fields.map(({ label, key, type }) => {
-                  const val = s[key];
-                  if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                  if (type === "tags") {
-                    return (
-                      <div key={key}>
-                        <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {(val as string[]).map((t: string, i: number) => (
-                            <Badge key={i} variant="outline" className="text-[10px]">{t}</Badge>
-                          ))}
+          {product.enrichment_summary && (() => {
+            const s = product.enrichment_summary as Record<string, any>;
+            const fields: { label: string; key: string; type?: "text" | "html" | "tags" }[] = [
+              { label: "Title", key: "title" },
+              { label: "Subtitle", key: "subtitle" },
+              { label: "Brand", key: "brand" },
+              { label: "Product Type", key: "product_type" },
+              { label: "Product Form", key: "product_form" },
+              { label: "Description", key: "description", type: "html" },
+              { label: "Ingredients", key: "ingredients_summary" },
+              { label: "Directions", key: "directions_summary" },
+              { label: "Warnings", key: "warnings_summary" },
+              { label: "Claims", key: "claims_summary" },
+              { label: "SEO Title", key: "seo_title" },
+              { label: "SEO Description", key: "seo_description" },
+              { label: "eBay Category ID", key: "ebay_category_id" },
+              { label: "UPC", key: "upc" },
+              { label: "EPID", key: "epid" },
+              { label: "MPN", key: "mpn" },
+              { label: "Tags", key: "tags", type: "tags" },
+              { label: "Suggested Tags", key: "suggested_tags", type: "tags" },
+            ];
+            return (
+              <Card className="mt-4 border-primary/20 bg-primary/5">
+                <CardContent className="pt-4 space-y-3">
+                  <span className="text-xs font-semibold uppercase text-primary">Last Enrichment Result</span>
+                  {fields.map(({ label, key, type }) => {
+                    const val = s[key];
+                    if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                    if (type === "tags") {
+                      return (
+                        <div key={key}>
+                          <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(val as string[]).map((t: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-[10px]">{t}</Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  }
-                  if (type === "html") {
+                      );
+                    }
+                    if (type === "html") {
+                      return (
+                        <div key={key}>
+                          <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
+                          <div className="text-sm mt-1 prose prose-sm max-w-none dark:prose-invert border rounded-md p-3 bg-background" dangerouslySetInnerHTML={{ __html: val }} />
+                        </div>
+                      );
+                    }
                     return (
                       <div key={key}>
                         <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
-                        <div className="text-sm mt-1 prose prose-sm max-w-none dark:prose-invert border rounded-md p-3 bg-background" dangerouslySetInnerHTML={{ __html: val }} />
+                        <p className="text-sm">{String(val)}</p>
                       </div>
                     );
-                  }
-                  return (
-                    <div key={key}>
-                      <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
-                      <p className="text-sm">{String(val)}</p>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          );
-        })()}
-      </CardContent>
-    </Card>
+                  })}
+                </CardContent>
+              </Card>
+            );
+          })()}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
