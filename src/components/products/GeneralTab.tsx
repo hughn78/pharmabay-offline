@@ -286,7 +286,7 @@ export function GeneralTab({ product, onSave, isSaving }: GeneralTabProps) {
           {form.full_description_html && (
             <div>
               <Label className="text-sm text-muted-foreground">Preview</Label>
-              <div className="mt-1 prose prose-sm max-w-none dark:prose-invert border rounded-md p-4 bg-background" dangerouslySetInnerHTML={{ __html: form.full_description_html }} />
+              <div className="mt-1 prose prose-sm max-w-none dark:prose-invert border rounded-md p-4 bg-background" dangerouslySetInnerHTML={{ __html: sanitizeHtml(form.full_description_html) }} />
             </div>
           )}
 

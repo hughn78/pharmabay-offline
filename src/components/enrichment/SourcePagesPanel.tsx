@@ -202,7 +202,7 @@ export function SourcePagesPanel({ product }: Props) {
             <Label className="text-xs font-semibold uppercase text-primary">Generated Description Preview</Label>
             <div
               className="prose prose-sm max-w-none dark:prose-invert border rounded-md p-4 bg-background text-sm"
-              dangerouslySetInnerHTML={{ __html: generated.description_html }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(generated.description_html) }}
             />
           </div>
         )}
