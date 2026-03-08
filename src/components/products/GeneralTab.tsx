@@ -12,6 +12,7 @@ import { ChevronDown, Save, Plus, X, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface GeneralTabProps {
   product: any;
