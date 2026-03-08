@@ -25,6 +25,10 @@ import { useQueryClient } from "@tanstack/react-query";
 interface Props {
   images: any[];
   productId: string;
+  metas?: Map<string, import("@/hooks/useImageDimensions").ImageMeta>;
+  bestImageId?: string | null;
+  selectedImageIds?: string[];
+  onToggleSelect?: (id: string) => void;
 }
 
 type DetectedType = "file" | "image_url" | "page_url" | "html_snippet" | "unknown";
