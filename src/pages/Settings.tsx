@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers, Loader2 } from "lucide-react";
+import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers, Loader2, Database, Download } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
