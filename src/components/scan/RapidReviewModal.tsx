@@ -37,6 +37,7 @@ interface Props {
 
 export function RapidReviewModal({ productId, onClose, onSaveAndNext }: Props) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", productId],
