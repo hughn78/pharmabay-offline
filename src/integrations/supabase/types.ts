@@ -256,6 +256,63 @@ export type Database = {
         }
         Relationships: []
       }
+      ebay_connections: {
+        Row: {
+          access_token_encrypted: string | null
+          access_token_expires_at: string | null
+          client_id: string | null
+          connected_username: string | null
+          connection_status: string | null
+          created_at: string | null
+          environment: string
+          fulfillment_policy_id: string | null
+          id: string
+          marketplace_id: string | null
+          merchant_location_key: string | null
+          payment_policy_id: string | null
+          refresh_token_encrypted: string | null
+          return_policy_id: string | null
+          ru_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          access_token_expires_at?: string | null
+          client_id?: string | null
+          connected_username?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          environment?: string
+          fulfillment_policy_id?: string | null
+          id?: string
+          marketplace_id?: string | null
+          merchant_location_key?: string | null
+          payment_policy_id?: string | null
+          refresh_token_encrypted?: string | null
+          return_policy_id?: string | null
+          ru_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          access_token_expires_at?: string | null
+          client_id?: string | null
+          connected_username?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          environment?: string
+          fulfillment_policy_id?: string | null
+          id?: string
+          marketplace_id?: string | null
+          merchant_location_key?: string | null
+          payment_policy_id?: string | null
+          refresh_token_encrypted?: string | null
+          return_policy_id?: string | null
+          ru_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ebay_drafts: {
         Row: {
           approved_by: string | null
@@ -270,6 +327,12 @@ export type Database = {
           description_html: string | null
           description_plain: string | null
           ean: string | null
+          ebay_inventory_sku: string | null
+          ebay_last_error: string | null
+          ebay_last_synced_at: string | null
+          ebay_listing_url: string | null
+          ebay_marketplace_id: string | null
+          ebay_offer_id: string | null
           epid: string | null
           id: string
           image_urls: string[] | null
@@ -303,6 +366,12 @@ export type Database = {
           description_html?: string | null
           description_plain?: string | null
           ean?: string | null
+          ebay_inventory_sku?: string | null
+          ebay_last_error?: string | null
+          ebay_last_synced_at?: string | null
+          ebay_listing_url?: string | null
+          ebay_marketplace_id?: string | null
+          ebay_offer_id?: string | null
           epid?: string | null
           id?: string
           image_urls?: string[] | null
@@ -336,6 +405,12 @@ export type Database = {
           description_html?: string | null
           description_plain?: string | null
           ean?: string | null
+          ebay_inventory_sku?: string | null
+          ebay_last_error?: string | null
+          ebay_last_synced_at?: string | null
+          ebay_listing_url?: string | null
+          ebay_marketplace_id?: string | null
+          ebay_offer_id?: string | null
           epid?: string | null
           id?: string
           image_urls?: string[] | null
@@ -507,6 +582,7 @@ export type Database = {
           ebay_offer_id: string | null
           error_message: string | null
           id: string
+          operation_type: string | null
           product_id: string | null
           publish_mode: string | null
           publish_status: string | null
@@ -522,6 +598,7 @@ export type Database = {
           ebay_offer_id?: string | null
           error_message?: string | null
           id?: string
+          operation_type?: string | null
           product_id?: string | null
           publish_mode?: string | null
           publish_status?: string | null
@@ -537,6 +614,7 @@ export type Database = {
           ebay_offer_id?: string | null
           error_message?: string | null
           id?: string
+          operation_type?: string | null
           product_id?: string | null
           publish_mode?: string | null
           publish_status?: string | null
