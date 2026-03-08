@@ -17,6 +17,7 @@ import ProductEditor from "./pages/ProductEditor";
 import ShopifyReconciliation from "./pages/ShopifyReconciliation";
 import ShopifyStockSync from "./pages/ShopifyStockSync";
 import ChannelListingImports from "./pages/ChannelListingImports";
+import EbayCallback from "./pages/EbayCallback";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/stock-sync" element={<ShopifyStockSync />} />
               <Route path="/channel-imports" element={<ChannelListingImports />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/ebay-callback" element={<EbayCallback />} />
               <Route path="/audit" element={<AuditLog />} />
             </Route>
           </Route>
