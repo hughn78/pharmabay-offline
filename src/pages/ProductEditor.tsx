@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UniversalImageIntake } from "@/components/images/UniversalImageIntake";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
+import { EbayPublishPanel } from "@/components/ebay/EbayPublishPanel";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel";
 import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
@@ -566,6 +567,8 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
         </div>
       </CardContent>
     </Card>
+
+      <EbayPublishPanel productId={product.id} product={product} draft={draft} />
     </div>
   );
 }

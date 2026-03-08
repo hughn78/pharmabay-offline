@@ -20,6 +20,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ComplianceRuleEditor } from "@/components/compliance/ComplianceRuleEditor";
 import { ShopifySettings } from "@/components/shopify/ShopifySettings";
+import { EbaySettings } from "@/components/ebay/EbaySettings";
 
 function useAppSetting(key: string) {
   const queryClient = useQueryClient();
@@ -170,42 +171,7 @@ function PricingSettings() {
   );
 }
 
-function EbaySettings() {
-  const { data, isLoading, save, isSaving } = useAppSetting("ebay_shipping");
-  const [form, setForm] = useState({ location: "", dispatch_time_days: "2" });
-
-  useEffect(() => {
-    if (data) setForm({
-      location: data.location || "",
-      dispatch_time_days: String(data.dispatch_time_days ?? 2),
-    });
-  }, [data]);
-
-  return (
-    <Card>
-      <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> eBay Integration</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">Not Connected</Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          eBay API credentials are stored as secure server-side secrets. Contact your administrator to configure.
-        </p>
-        <Separator />
-        <h4 className="font-medium text-sm">Shipping Defaults</h4>
-        <SettingField label="Location" value={form.location} onChange={(v) => setForm((p) => ({ ...p, location: v }))} placeholder="Altona North VIC 3025 AU" />
-        <SettingField label="Dispatch Time (days)" value={form.dispatch_time_days} onChange={(v) => setForm((p) => ({ ...p, dispatch_time_days: v }))} type="number" placeholder="2" />
-        <Button onClick={() => save({
-          location: form.location,
-          dispatch_time_days: parseInt(form.dispatch_time_days) || 2,
-        })} disabled={isSaving}>
-          {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Save
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
+// EbaySettings is now imported from @/components/ebay/EbaySettings
 
 function SettingField({ label, value, onChange, placeholder, type = "text" }: {
   label: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string;

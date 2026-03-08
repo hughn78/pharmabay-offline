@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, ShoppingCart, Store, AlertCircle, CheckCircle, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { EbayBulkPanel } from "@/components/ebay/EbayBulkPanel";
 
 export default function ChannelSync() {
   const { data: ebayJobs = [] } = useQuery({
@@ -48,7 +49,8 @@ export default function ChannelSync() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ebay" className="mt-4">
+        <TabsContent value="ebay" className="mt-4 space-y-4">
+          <EbayBulkPanel />
           <JobList jobs={ebayJobs} platform="ebay" />
         </TabsContent>
 
