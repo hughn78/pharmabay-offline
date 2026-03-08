@@ -691,8 +691,3 @@ function FormField({ label, value, onChange, type = "text", mono = false }: {
   );
 }
 
-function ComplianceBadge({ status }: { status?: string }) {
-  if (!status) return null;
-  const cls = status === "blocked" ? "status-blocked" : status === "review_required" ? "status-review" : "status-permitted";
-  return <Badge className={`text-[10px] ${cls}`}>{status.replace("_", " ")}</Badge>;
-}
