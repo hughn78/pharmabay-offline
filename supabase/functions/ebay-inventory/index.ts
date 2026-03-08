@@ -602,7 +602,7 @@ serve(async (req) => {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
           },
         }
