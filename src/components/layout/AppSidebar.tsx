@@ -62,15 +62,15 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl card-lavender">
-            <Package className="h-5 w-5 text-sidebar-primary" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+            <Package className="h-5 w-5 text-primary" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-bold text-foreground tracking-tight font-display">
                 PharmaBay
               </span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-[0.15em]">
                 Lister
               </span>
             </div>
