@@ -235,7 +235,7 @@ serve(async (req) => {
       const res = await fetch(`${apiBase}/sell/inventory/v1/offer`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${ebayToken}`,
           "Content-Type": "application/json",
           "Content-Language": "en-AU",
         },
