@@ -395,6 +395,20 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
     description_html: draft?.description_html || "",
   });
 
+  useEffect(() => {
+    if (draft) {
+      setForm({
+        title: draft.title || "",
+        subtitle: draft.subtitle || "",
+        category_id: draft.category_id || "",
+        epid: draft.epid || "",
+        mpn: draft.mpn || "",
+        buy_it_now_price: draft.buy_it_now_price || "",
+        description_html: draft.description_html || "",
+      });
+    }
+  }, [draft]);
+
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
