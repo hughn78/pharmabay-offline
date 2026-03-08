@@ -661,7 +661,7 @@ serve(async (req) => {
         `${apiBase}/sell/inventory/v1/offer/${encodeURIComponent(offer_id)}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
           },
         }
