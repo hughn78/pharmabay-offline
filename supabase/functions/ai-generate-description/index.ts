@@ -107,7 +107,7 @@ Product information:
 - Warnings: ${warnings}
 - Claims: ${claims}
 
-Research the manufacturer's website and similar vendor listings for this product to generate an accurate, comprehensive description. Include key benefits, usage instructions, and any important product specifications that would help buyers make a purchase decision.`;
+Using only the product information provided below, write a detailed and accurate description. Do not invent specifications not present in the data.`;
 
     } else if (target === "shopify") {
       systemPrompt = `You are an expert Shopify product description writer for an online health and pharmacy store.
