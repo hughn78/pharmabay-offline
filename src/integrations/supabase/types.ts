@@ -875,6 +875,9 @@ export type Database = {
       }
       products: {
         Row: {
+          age_restriction: string | null
+          allergen_information: string | null
+          artg_inclusion_type: string | null
           artg_number: string | null
           barcode: string | null
           brand: string | null
@@ -882,47 +885,82 @@ export type Database = {
           compliance_reasons: string[] | null
           compliance_status: string | null
           cost_price: number | null
+          country_of_origin: string | null
           created_at: string | null
           department: string | null
           directions_summary: string | null
+          ebay_category_id: string | null
+          ebay_listed_price: number | null
           enrichment_confidence: string | null
           enrichment_status: string | null
           enrichment_summary: Json | null
           flavour: string | null
+          full_description_html: string | null
           gross_profit_percent: number | null
+          gtin14: string | null
+          height_mm: number | null
           id: string
           ingredients_summary: string | null
           internal_category: string | null
+          key_features: string[] | null
+          last_modified_by: string | null
           last_purchased_at: string | null
           last_sold_at: string | null
+          lead_time_days: number | null
+          length_mm: number | null
+          manufacturer: string | null
+          mpn: string | null
+          ndss_product: boolean | null
           normalized_product_name: string | null
           notes_internal: string | null
           pack_size: string | null
+          pbs_item_code: string | null
+          pbs_listed: boolean | null
           product_form: string | null
+          product_status: string | null
           product_type: string | null
           quantity_available_for_ebay: number | null
           quantity_available_for_shopify: number | null
           quantity_reserved_for_store: number | null
+          regulatory_notes: string | null
+          reorder_level: number | null
+          requires_prescription: boolean | null
+          scheduled_drug: string | null
           sell_price: number | null
+          shelf_life_notes: string | null
+          shopify_collection: string | null
+          shopify_listed_price: number | null
+          short_description: string | null
           size_value: string | null
           sku: string | null
           source_links: Json | null
           source_product_name: string | null
           stock_on_hand: number | null
           stock_value: number | null
+          storage_requirements: string | null
           strength: string | null
           supplier: string | null
+          supplier_barcode: string | null
+          supplier_product_code: string | null
+          tags: string[] | null
+          tax_class: string | null
           total_cogs_12m: number | null
           total_sales_value_12m: number | null
+          unit_of_measure: string | null
           units_purchased_12m: number | null
           units_sold_12m: number | null
+          upc: string | null
           updated_at: string | null
           variant: string | null
           warnings_summary: string | null
           weight_grams: number | null
+          width_mm: number | null
           z_category: string | null
         }
         Insert: {
+          age_restriction?: string | null
+          allergen_information?: string | null
+          artg_inclusion_type?: string | null
           artg_number?: string | null
           barcode?: string | null
           brand?: string | null
@@ -930,47 +968,82 @@ export type Database = {
           compliance_reasons?: string[] | null
           compliance_status?: string | null
           cost_price?: number | null
+          country_of_origin?: string | null
           created_at?: string | null
           department?: string | null
           directions_summary?: string | null
+          ebay_category_id?: string | null
+          ebay_listed_price?: number | null
           enrichment_confidence?: string | null
           enrichment_status?: string | null
           enrichment_summary?: Json | null
           flavour?: string | null
+          full_description_html?: string | null
           gross_profit_percent?: number | null
+          gtin14?: string | null
+          height_mm?: number | null
           id?: string
           ingredients_summary?: string | null
           internal_category?: string | null
+          key_features?: string[] | null
+          last_modified_by?: string | null
           last_purchased_at?: string | null
           last_sold_at?: string | null
+          lead_time_days?: number | null
+          length_mm?: number | null
+          manufacturer?: string | null
+          mpn?: string | null
+          ndss_product?: boolean | null
           normalized_product_name?: string | null
           notes_internal?: string | null
           pack_size?: string | null
+          pbs_item_code?: string | null
+          pbs_listed?: boolean | null
           product_form?: string | null
+          product_status?: string | null
           product_type?: string | null
           quantity_available_for_ebay?: number | null
           quantity_available_for_shopify?: number | null
           quantity_reserved_for_store?: number | null
+          regulatory_notes?: string | null
+          reorder_level?: number | null
+          requires_prescription?: boolean | null
+          scheduled_drug?: string | null
           sell_price?: number | null
+          shelf_life_notes?: string | null
+          shopify_collection?: string | null
+          shopify_listed_price?: number | null
+          short_description?: string | null
           size_value?: string | null
           sku?: string | null
           source_links?: Json | null
           source_product_name?: string | null
           stock_on_hand?: number | null
           stock_value?: number | null
+          storage_requirements?: string | null
           strength?: string | null
           supplier?: string | null
+          supplier_barcode?: string | null
+          supplier_product_code?: string | null
+          tags?: string[] | null
+          tax_class?: string | null
           total_cogs_12m?: number | null
           total_sales_value_12m?: number | null
+          unit_of_measure?: string | null
           units_purchased_12m?: number | null
           units_sold_12m?: number | null
+          upc?: string | null
           updated_at?: string | null
           variant?: string | null
           warnings_summary?: string | null
           weight_grams?: number | null
+          width_mm?: number | null
           z_category?: string | null
         }
         Update: {
+          age_restriction?: string | null
+          allergen_information?: string | null
+          artg_inclusion_type?: string | null
           artg_number?: string | null
           barcode?: string | null
           brand?: string | null
@@ -978,44 +1051,76 @@ export type Database = {
           compliance_reasons?: string[] | null
           compliance_status?: string | null
           cost_price?: number | null
+          country_of_origin?: string | null
           created_at?: string | null
           department?: string | null
           directions_summary?: string | null
+          ebay_category_id?: string | null
+          ebay_listed_price?: number | null
           enrichment_confidence?: string | null
           enrichment_status?: string | null
           enrichment_summary?: Json | null
           flavour?: string | null
+          full_description_html?: string | null
           gross_profit_percent?: number | null
+          gtin14?: string | null
+          height_mm?: number | null
           id?: string
           ingredients_summary?: string | null
           internal_category?: string | null
+          key_features?: string[] | null
+          last_modified_by?: string | null
           last_purchased_at?: string | null
           last_sold_at?: string | null
+          lead_time_days?: number | null
+          length_mm?: number | null
+          manufacturer?: string | null
+          mpn?: string | null
+          ndss_product?: boolean | null
           normalized_product_name?: string | null
           notes_internal?: string | null
           pack_size?: string | null
+          pbs_item_code?: string | null
+          pbs_listed?: boolean | null
           product_form?: string | null
+          product_status?: string | null
           product_type?: string | null
           quantity_available_for_ebay?: number | null
           quantity_available_for_shopify?: number | null
           quantity_reserved_for_store?: number | null
+          regulatory_notes?: string | null
+          reorder_level?: number | null
+          requires_prescription?: boolean | null
+          scheduled_drug?: string | null
           sell_price?: number | null
+          shelf_life_notes?: string | null
+          shopify_collection?: string | null
+          shopify_listed_price?: number | null
+          short_description?: string | null
           size_value?: string | null
           sku?: string | null
           source_links?: Json | null
           source_product_name?: string | null
           stock_on_hand?: number | null
           stock_value?: number | null
+          storage_requirements?: string | null
           strength?: string | null
           supplier?: string | null
+          supplier_barcode?: string | null
+          supplier_product_code?: string | null
+          tags?: string[] | null
+          tax_class?: string | null
           total_cogs_12m?: number | null
           total_sales_value_12m?: number | null
+          unit_of_measure?: string | null
           units_purchased_12m?: number | null
           units_sold_12m?: number | null
+          upc?: string | null
           updated_at?: string | null
           variant?: string | null
           warnings_summary?: string | null
           weight_grams?: number | null
+          width_mm?: number | null
           z_category?: string | null
         }
         Relationships: []
