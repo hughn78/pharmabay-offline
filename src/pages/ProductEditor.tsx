@@ -32,6 +32,8 @@ import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
 import { SourcePagesPanel } from "@/components/enrichment/SourcePagesPanel";
 import { EnrichmentImageUpload } from "@/components/enrichment/EnrichmentImageUpload";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { upsertEbayDraft, upsertShopifyDraft } from "@/lib/draft-upsert";
+import { ComplianceBadge } from "@/components/ui/ComplianceBadge";
 
 export default function ProductEditor() {
   const { id } = useParams();
