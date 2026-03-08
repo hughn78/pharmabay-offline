@@ -7,6 +7,7 @@ import { Sparkles, Loader2, CheckCircle, Copy } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface Props {
   productId: string;
@@ -110,7 +111,7 @@ export function AiDescriptionGenerator({ productId, target, onApply }: Props) {
                 <span className="text-[10px] uppercase text-muted-foreground font-medium">Description</span>
                 <div
                   className="text-sm mt-1 prose prose-sm max-w-none dark:prose-invert border rounded-md p-3 bg-background"
-                  dangerouslySetInnerHTML={{ __html: generated.description_html || generated.description || "" }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(generated.description_html || generated.description || "") }}
                 />
               </div>
             )}

@@ -89,12 +89,34 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // JWT authentication check
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const supabaseAuth = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const token = authHeader.replace("Bearer ", "");
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = getSupabaseAdmin();
 
   try {
     const { action, ...params } = await req.json();
     const conn = await getConnection(supabase);
-    const token = await getValidToken(supabase, conn);
+    const ebayToken = await getValidToken(supabase, conn);
     const apiBase = getApiBase(conn.environment);
     const marketplaceId = conn.marketplace_id || "EBAY_AU";
 
@@ -139,7 +161,7 @@ serve(async (req) => {
         {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
             "Content-Language": "en-AU",
           },
@@ -213,7 +235,7 @@ serve(async (req) => {
       const res = await fetch(`${apiBase}/sell/inventory/v1/offer`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${ebayToken}`,
           "Content-Type": "application/json",
           "Content-Language": "en-AU",
         },
@@ -280,7 +302,7 @@ serve(async (req) => {
         {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
             "Content-Language": "en-AU",
           },
@@ -323,7 +345,7 @@ serve(async (req) => {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
           },
         }
@@ -455,7 +477,7 @@ serve(async (req) => {
         {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
             "Content-Language": "en-AU",
           },
@@ -516,7 +538,7 @@ serve(async (req) => {
           {
             method: "PUT",
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${ebayToken}`,
               "Content-Type": "application/json",
               "Content-Language": "en-AU",
             },
@@ -543,7 +565,7 @@ serve(async (req) => {
         const offerRes = await fetch(`${apiBase}/sell/inventory/v1/offer`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
             "Content-Language": "en-AU",
           },
@@ -580,7 +602,7 @@ serve(async (req) => {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
           },
         }
@@ -639,7 +661,7 @@ serve(async (req) => {
         `${apiBase}/sell/inventory/v1/offer/${encodeURIComponent(offer_id)}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${ebayToken}`,
             "Content-Type": "application/json",
           },
         }

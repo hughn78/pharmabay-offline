@@ -31,6 +31,7 @@ import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel"
 import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
 import { SourcePagesPanel } from "@/components/enrichment/SourcePagesPanel";
 import { EnrichmentImageUpload } from "@/components/enrichment/EnrichmentImageUpload";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 export default function ProductEditor() {
   const { id } = useParams();
@@ -358,7 +359,7 @@ function EnrichmentTab({ product }: { product: any }) {
                       return (
                         <div key={key}>
                           <span className="text-[10px] uppercase text-muted-foreground font-medium">{label}</span>
-                          <div className="text-sm mt-1 prose prose-sm max-w-none dark:prose-invert border rounded-md p-3 bg-background" dangerouslySetInnerHTML={{ __html: val }} />
+                          <div className="text-sm mt-1 prose prose-sm max-w-none dark:prose-invert border rounded-md p-3 bg-background" dangerouslySetInnerHTML={{ __html: sanitizeHtml(val as string) }} />
                         </div>
                       );
                     }
