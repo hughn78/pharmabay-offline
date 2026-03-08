@@ -439,13 +439,18 @@ function FieldTextarea({ label, value, onChange, rows = 3, placeholder }: { labe
 }
 
 function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  const safeOptions = options.map(o => ({
+    ...o,
+    value: o.value === "" ? "__none__" : o.value,
+  }));
+  const safeValue = value === "" || value == null ? "__none__" : value;
   return (
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
-      <Select value={value} onValueChange={onChange}>
+      <Select value={safeValue} onValueChange={v => onChange(v === "__none__" ? "" : v)}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
-          {options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          {safeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>
       </Select>
     </div>
