@@ -911,6 +911,8 @@ export default function ImportStock() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
