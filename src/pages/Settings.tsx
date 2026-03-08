@@ -103,6 +103,10 @@ export default function Settings() {
         <TabsContent value="categories" className="mt-4">
           <CategoryMappings />
         </TabsContent>
+
+        <TabsContent value="data" className="mt-4">
+          <DatabaseExport />
+        </TabsContent>
       </Tabs>
     </div>
   );
