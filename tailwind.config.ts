@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-sans)', 'General Sans', 'system-ui', 'sans-serif'],
-        display: ['var(--font-display)', 'Space Grotesk', 'sans-serif'],
+        sans: ['var(--font-sans)', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Instrument Serif', 'Georgia', 'serif'],
         mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
       },
       colors: {
