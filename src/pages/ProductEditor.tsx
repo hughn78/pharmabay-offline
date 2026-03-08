@@ -155,7 +155,7 @@ export default function ProductEditor() {
         </TabsList>
 
         <TabsContent value="general" className="mt-4">
-          <GeneralTab product={product} onSave={(updates: any) => updateProduct.mutate(updates)} />
+          <GeneralTab product={product} onSave={(updates: any) => updateProduct.mutate(updates)} isSaving={updateProduct.isPending} />
         </TabsContent>
 
         <TabsContent value="enrichment" className="mt-4">
