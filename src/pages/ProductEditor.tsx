@@ -28,6 +28,8 @@ import { EbayPublishPanel } from "@/components/ebay/EbayPublishPanel";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel";
 import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
+import { SourcePagesPanel } from "@/components/enrichment/SourcePagesPanel";
+import { EnrichmentImageUpload } from "@/components/enrichment/EnrichmentImageUpload";
 
 export default function ProductEditor() {
   const { id } = useParams();
