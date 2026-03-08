@@ -567,6 +567,8 @@ function EbayTab({ product, draft }: { product: any; draft: any }) {
         </div>
       </CardContent>
     </Card>
+
+      <EbayPublishPanel productId={product.id} product={product} draft={draft} />
     </div>
   );
 }
