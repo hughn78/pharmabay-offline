@@ -802,6 +802,60 @@ export type Database = {
           },
         ]
       }
+      pricebook_import_runs: {
+        Row: {
+          completed_at: string | null
+          conflict_count: number | null
+          created_count: number | null
+          dry_run: boolean | null
+          error_count: number | null
+          filename: string | null
+          id: string
+          imported_by: string | null
+          matched_count: number | null
+          notes: string | null
+          skipped_count: number | null
+          started_at: string | null
+          status: string | null
+          total_rows: number | null
+          wholesaler: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conflict_count?: number | null
+          created_count?: number | null
+          dry_run?: boolean | null
+          error_count?: number | null
+          filename?: string | null
+          id?: string
+          imported_by?: string | null
+          matched_count?: number | null
+          notes?: string | null
+          skipped_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_rows?: number | null
+          wholesaler: string
+        }
+        Update: {
+          completed_at?: string | null
+          conflict_count?: number | null
+          created_count?: number | null
+          dry_run?: boolean | null
+          error_count?: number | null
+          filename?: string | null
+          id?: string
+          imported_by?: string | null
+          matched_count?: number | null
+          notes?: string | null
+          skipped_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_rows?: number | null
+          wholesaler?: string
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           alt_text: string | null
@@ -867,6 +921,81 @@ export type Database = {
           {
             foreignKeyName: "product_images_product_id_fkey"
             columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_import_conflicts: {
+        Row: {
+          barcode: string | null
+          candidate_product_ids: string[] | null
+          conflict_reason: string | null
+          cost_ex_gst: number | null
+          cost_inc_gst: number | null
+          created_at: string | null
+          generic_name: string | null
+          id: string
+          import_run_id: string | null
+          pde: string | null
+          product_name: string | null
+          raw_row: Json | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_product_id: string | null
+          wholesaler: string
+        }
+        Insert: {
+          barcode?: string | null
+          candidate_product_ids?: string[] | null
+          conflict_reason?: string | null
+          cost_ex_gst?: number | null
+          cost_inc_gst?: number | null
+          created_at?: string | null
+          generic_name?: string | null
+          id?: string
+          import_run_id?: string | null
+          pde?: string | null
+          product_name?: string | null
+          raw_row?: Json | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_product_id?: string | null
+          wholesaler: string
+        }
+        Update: {
+          barcode?: string | null
+          candidate_product_ids?: string[] | null
+          conflict_reason?: string | null
+          cost_ex_gst?: number | null
+          cost_inc_gst?: number | null
+          created_at?: string | null
+          generic_name?: string | null
+          id?: string
+          import_run_id?: string | null
+          pde?: string | null
+          product_name?: string | null
+          raw_row?: Json | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_product_id?: string | null
+          wholesaler?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_import_conflicts_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "pricebook_import_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_import_conflicts_resolved_product_id_fkey"
+            columns: ["resolved_product_id"]
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
@@ -2018,6 +2147,66 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wholesaler_skus: {
+        Row: {
+          barcode: string | null
+          cost_ex_gst: number | null
+          cost_inc_gst: number | null
+          created_at: string | null
+          generic_name: string | null
+          id: string
+          last_import_run_id: string | null
+          last_updated_at: string | null
+          pde: string | null
+          product_id: string | null
+          product_name: string | null
+          wholesaler: string
+        }
+        Insert: {
+          barcode?: string | null
+          cost_ex_gst?: number | null
+          cost_inc_gst?: number | null
+          created_at?: string | null
+          generic_name?: string | null
+          id?: string
+          last_import_run_id?: string | null
+          last_updated_at?: string | null
+          pde?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          wholesaler: string
+        }
+        Update: {
+          barcode?: string | null
+          cost_ex_gst?: number | null
+          cost_inc_gst?: number | null
+          created_at?: string | null
+          generic_name?: string | null
+          id?: string
+          last_import_run_id?: string | null
+          last_updated_at?: string | null
+          pde?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          wholesaler?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_skus_last_import_run_id_fkey"
+            columns: ["last_import_run_id"]
+            isOneToOne: false
+            referencedRelation: "pricebook_import_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_skus_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
