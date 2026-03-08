@@ -17,6 +17,7 @@ import ProductEditor from "./pages/ProductEditor";
 import ShopifyReconciliation from "./pages/ShopifyReconciliation";
 import ShopifyStockSync from "./pages/ShopifyStockSync";
 import ChannelListingImports from "./pages/ChannelListingImports";
+import EbayCallback from "./pages/EbayCallback";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
