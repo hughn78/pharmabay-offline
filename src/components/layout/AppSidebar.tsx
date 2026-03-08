@@ -62,15 +62,15 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Package className="h-5 w-5 text-sidebar-primary-foreground" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl card-lavender">
+            <Package className="h-5 w-5 text-sidebar-primary" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-sidebar-accent-foreground tracking-tight">
+              <span className="text-sm font-bold text-foreground tracking-tight font-display">
                 PharmaBay
               </span>
-              <span className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
                 Lister
               </span>
             </div>
@@ -80,7 +80,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground/70 text-[10px] uppercase tracking-widest">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -89,7 +89,7 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
-                      className="hover:bg-sidebar-accent/50"
+                      className="hover:bg-sidebar-accent/60 rounded-lg transition-colors"
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
@@ -105,21 +105,21 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3 space-y-2">
         {!collapsed && user && (
-          <div className="text-[10px] text-sidebar-foreground/50 truncate px-1">
+          <div className="text-[10px] text-muted-foreground/60 truncate px-1">
             {user.email}
           </div>
         )}
         <Button
           variant="ghost"
           size={collapsed ? "icon" : "sm"}
-          className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+          className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 rounded-lg"
           onClick={handleLogout}
         >
           <LogOut className={`h-4 w-4 ${collapsed ? "" : "mr-2"}`} />
           {!collapsed && <span>Sign Out</span>}
         </Button>
         {!collapsed && (
-          <div className="text-[10px] text-sidebar-foreground/40 text-center">
+          <div className="text-[10px] text-muted-foreground/40 text-center">
             PharmaBay Lister v1.0
           </div>
         )}

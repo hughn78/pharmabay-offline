@@ -2,93 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 25% 10%;
+    --background: 40 20% 97%;
+    --foreground: 30 10% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 30 10% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 30 10% 15%;
 
-    --primary: 210 75% 42%;
+    --primary: 262 40% 65%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 220 25% 10%;
+    --secondary: 40 15% 93%;
+    --secondary-foreground: 30 10% 15%;
 
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 14% 46%;
+    --muted: 40 12% 94%;
+    --muted-foreground: 30 8% 50%;
 
-    --accent: 168 60% 40%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 43 65% 62%;
+    --accent-foreground: 30 10% 15%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 55% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 210 75% 42%;
+    --border: 40 12% 90%;
+    --input: 40 12% 90%;
+    --ring: 262 40% 65%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     /* PharmaBay custom tokens */
-    --success: 152 60% 40%;
+    --success: 152 45% 48%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 38 75% 55%;
     --warning-foreground: 0 0% 100%;
-    --info: 210 75% 42%;
+    --info: 262 40% 65%;
     --info-foreground: 0 0% 100%;
 
-    --permitted: 152 60% 40%;
-    --review: 38 92% 50%;
-    --blocked: 0 72% 51%;
+    --permitted: 152 45% 48%;
+    --review: 38 75% 55%;
+    --blocked: 0 55% 55%;
 
-    --sidebar-background: 220 25% 10%;
-    --sidebar-foreground: 210 15% 80%;
-    --sidebar-primary: 210 75% 55%;
+    --sidebar-background: 40 18% 96%;
+    --sidebar-foreground: 30 8% 35%;
+    --sidebar-primary: 262 40% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 16%;
-    --sidebar-accent-foreground: 210 15% 90%;
-    --sidebar-border: 220 20% 18%;
-    --sidebar-ring: 210 75% 55%;
+    --sidebar-accent: 262 30% 93%;
+    --sidebar-accent-foreground: 262 40% 35%;
+    --sidebar-border: 40 12% 90%;
+    --sidebar-ring: 262 40% 65%;
 
-    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-display: 'DM Serif Display', Georgia, serif;
     --font-mono: 'JetBrains Mono', monospace;
+
+    /* Pastel card accents */
+    --card-lavender: 262 50% 88%;
+    --card-gold: 43 70% 82%;
+    --card-sage: 152 30% 85%;
+    --card-coral: 12 60% 88%;
   }
 
   .dark {
-    --background: 220 25% 7%;
-    --foreground: 210 15% 92%;
-    --card: 220 22% 10%;
-    --card-foreground: 210 15% 92%;
-    --popover: 220 22% 10%;
-    --popover-foreground: 210 15% 92%;
-    --primary: 210 75% 55%;
+    --background: 30 10% 8%;
+    --foreground: 40 12% 90%;
+    --card: 30 8% 11%;
+    --card-foreground: 40 12% 90%;
+    --popover: 30 8% 11%;
+    --popover-foreground: 40 12% 90%;
+    --primary: 262 45% 70%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 20% 16%;
-    --secondary-foreground: 210 15% 92%;
-    --muted: 220 18% 14%;
-    --muted-foreground: 215 14% 55%;
-    --accent: 168 60% 45%;
+    --secondary: 30 8% 16%;
+    --secondary-foreground: 40 12% 90%;
+    --muted: 30 6% 14%;
+    --muted-foreground: 40 8% 55%;
+    --accent: 43 55% 55%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 45%;
+    --destructive: 0 50% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 18% 18%;
-    --input: 220 18% 18%;
-    --ring: 210 75% 55%;
-    --sidebar-background: 220 28% 6%;
-    --sidebar-foreground: 210 12% 75%;
-    --sidebar-primary: 210 75% 55%;
+    --border: 30 8% 18%;
+    --input: 30 8% 18%;
+    --ring: 262 45% 70%;
+    --sidebar-background: 30 10% 6%;
+    --sidebar-foreground: 40 8% 65%;
+    --sidebar-primary: 262 45% 70%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 22% 12%;
-    --sidebar-accent-foreground: 210 12% 85%;
-    --sidebar-border: 220 22% 12%;
-    --sidebar-ring: 210 75% 55%;
+    --sidebar-accent: 30 8% 14%;
+    --sidebar-accent-foreground: 40 8% 85%;
+    --sidebar-border: 30 8% 14%;
+    --sidebar-ring: 262 45% 70%;
+
+    --card-lavender: 262 30% 22%;
+    --card-gold: 43 40% 22%;
+    --card-sage: 152 20% 20%;
+    --card-coral: 12 30% 22%;
   }
 }
 
@@ -98,6 +110,11 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "ss01", "ss02";
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display), Georgia, serif;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -119,5 +136,17 @@
   }
   .status-dot-blocked {
     @apply bg-[hsl(var(--blocked))];
+  }
+  .card-lavender {
+    background-color: hsl(var(--card-lavender));
+  }
+  .card-gold {
+    background-color: hsl(var(--card-gold));
+  }
+  .card-sage {
+    background-color: hsl(var(--card-sage));
+  }
+  .card-coral {
+    background-color: hsl(var(--card-coral));
   }
 }
