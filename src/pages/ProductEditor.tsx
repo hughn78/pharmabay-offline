@@ -627,7 +627,7 @@ function ShopifyTab({ product, draft }: { product: any; draft: any }) {
 
   return (
     <div className="space-y-4">
-      <LiveOnlineStateCard productId={product.id} channel="shopify" />
+      <LiveOnlineStateCard productId={product.id} channel="shopify" draft={draft} />
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="flex items-center gap-2 mb-2">
