@@ -19,20 +19,26 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import Papa from "papaparse";
 
-// eBay File Exchange header
-const EBAY_HEADERS = [
-  "*Action(SiteID=Australia|Country=AU|Currency=AUD|Version=941)",
-  "*Category", "Product:UPC", "Product:EAN", "Product:EPID", "Product:Brand",
-  "Product:MPN", "Product:IncludePreFilledItemInformation",
-  "Product:IncludeStockPhotoURL", "Product:ReturnSearchResultsOnDuplicates",
-  "Title", "Subtitle", "Description", "*ConditionID", "PicURL",
-  "*Quantity", "*Format", "*StartPrice", "BuyItNowPrice", "*Duration",
-  "ImmediatePayRequired", "*Location", "ShippingType",
-  "ShippingService-1:Option", "ShippingService-1:Cost", "ShippingService-1:Priority",
-  "ShippingService-2:Option", "ShippingService-2:Cost", "ShippingService-2:Priority",
-  "DispatchTimeMax", "CustomLabel", "ReturnsAcceptedOption", "RefundOption",
-  "ReturnsWithinOption", "ShippingCostPaidByOption", "AdditionalDetails",
-  "ShippingProfileName", "ReturnProfileName", "PaymentProfileName",
+// eBay AU Draft Listings template
+const EBAY_DRAFT_INFO_LINES = [
+  `#INFO,Version=0.0.2,Template= eBay-draft-listings-template_AU,,,,,,,,`,
+  `#INFO Action and Category ID are required fields. 1) Set Action to Draft 2) Please find the category ID for your listings here: https://pages.ebay.com/sellerinformation/news/categorychanges.html,,,,,,,,,,`,
+  `"#INFO After you've successfully uploaded your draft from the Seller Hub Reports tab, complete your drafts to active listings here: https://www.ebay.com.au/sh/lst/drafts",,,,,,,,,,`,
+  `#INFO,,,,,,,,,,`,
+];
+
+const EBAY_DRAFT_HEADERS = [
+  "Action(SiteID=Australia|Country=AU|Currency=AUD|Version=1193|CC=UTF-8)",
+  "Custom label (SKU)",
+  "Category ID",
+  "Title",
+  "UPC",
+  "Price",
+  "Quantity",
+  "Item photo URL",
+  "Condition ID",
+  "Description",
+  "Format",
 ];
 
 function downloadCsv(content: string, filename: string) {
