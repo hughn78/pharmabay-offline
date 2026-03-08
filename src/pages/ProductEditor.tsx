@@ -240,16 +240,13 @@ function EnrichmentTab({ product }: { product: any }) {
       if (gen.ingredients_summary) ebayDescParts.push(`<h3>Ingredients</h3><p>${gen.ingredients_summary}</p>`);
       if (gen.warnings_summary) ebayDescParts.push(`<h3>Warnings</h3><p>${gen.warnings_summary}</p>`);
 
-      const ebayDraft: any = {
-        product_id: product.id, title: ebayTitle, subtitle: gen.subtitle || null,
+      const ebayDraftData = {
+        title: ebayTitle, subtitle: gen.subtitle || null,
         brand, description_html: ebayDescParts.join("\n") || null,
         mpn: gen.mpn || null, epid: gen.epid || null, upc: gen.upc || null,
-        ean: product.barcode || null, category_id: gen.ebay_category_id || null, updated_at: now,
+        ean: product.barcode || null, category_id: gen.ebay_category_id || null,
       };
-
-      const { data: existingEbay } = await supabase.from("ebay_drafts").select("id").eq("product_id", product.id).maybeSingle();
-      if (existingEbay?.id) { await supabase.from("ebay_drafts").update(ebayDraft).eq("id", existingEbay.id); }
-      else { await supabase.from("ebay_drafts").insert(ebayDraft); }
+      await upsertEbayDraft(product.id, ebayDraftData);
 
       const shopifyTitle = gen.normalized_product_name || product.source_product_name || "";
       const handle = shopifyTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -257,16 +254,13 @@ function EnrichmentTab({ product }: { product: any }) {
       const seoTitle = (shopifyTitle + (brand ? ` | ${brand}` : "")).slice(0, 70);
       const seoDesc = (gen.claims_summary || gen.description || shopifyTitle).slice(0, 160);
 
-      const shopifyDraft: any = {
-        product_id: product.id, title: shopifyTitle, handle, vendor: brand || null,
+      const shopifyDraftData = {
+        title: shopifyTitle, handle, vendor: brand || null,
         product_type: gen.product_type || product.z_category || null,
         description_html: shopifyDesc, seo_title: seoTitle, seo_description: seoDesc,
-        tags: gen.suggested_tags || gen.tags || null, updated_at: now,
+        tags: gen.suggested_tags || gen.tags || null,
       };
-
-      const { data: existingShopify } = await supabase.from("shopify_drafts").select("id").eq("product_id", product.id).maybeSingle();
-      if (existingShopify?.id) { await supabase.from("shopify_drafts").update(shopifyDraft).eq("id", existingShopify.id); }
-      else { await supabase.from("shopify_drafts").insert(shopifyDraft); }
+      await upsertShopifyDraft(product.id, shopifyDraftData);
 
       queryClient.invalidateQueries({ queryKey: ["product", product.id] });
       queryClient.invalidateQueries({ queryKey: ["ebay-draft", product.id] });
