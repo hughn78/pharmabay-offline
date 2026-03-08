@@ -20,17 +20,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, RefreshCw, Download } from "lucide-react";
+import { Package, Search, RefreshCw } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
 import { LiveStatusBadges } from "@/components/products/LiveStatusBadges";
+import { DraftStatusBadges } from "@/components/products/DraftStatusBadges";
+import { ProductRowKebab } from "@/components/products/ProductRowKebab";
+import { ExportFloatingBar } from "@/components/products/ExportFloatingBar";
 import { fullComplianceCheck } from "@/lib/compliance-engine";
 import { buildSafeIlikeOr } from "@/lib/search-utils";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useProductLiveStatus } from "@/hooks/useProductLiveStatus";
+import { useExportCart } from "@/stores/useExportCart";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import Papa from "papaparse";
 
 export default function Products() {
   const navigate = useNavigate();
@@ -38,9 +41,9 @@ export default function Products() {
   const debouncedSearch = useDebouncedValue(search, 300);
   const [complianceFilter, setComplianceFilter] = useState("all");
   const [channelFilter, setChannelFilter] = useState("all");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRunningCompliance, setIsRunningCompliance] = useState(false);
   const queryClient = useQueryClient();
+  const exportCart = useExportCart();
 
   const { data: complianceRules = [] } = useQuery({
     queryKey: ["compliance-rules"],
@@ -51,15 +54,11 @@ export default function Products() {
   });
 
   const handleRunCompliance = async () => {
-    const targets = selectedIds.size > 0
-      ? products.filter((p: any) => selectedIds.has(p.id))
-      : products;
-    if (targets.length === 0) return;
-
+    if (products.length === 0) return;
     setIsRunningCompliance(true);
     try {
-      const updates = targets
-        .map((p: any) => ({ p, result: fullComplianceCheck(p, complianceRules) }))
+      const updates = products
+        .map((p) => ({ p, result: fullComplianceCheck(p, complianceRules) }))
         .filter(({ p, result }) => result.status !== p.compliance_status)
         .map(({ p, result }) => ({
           id: p.id,
@@ -74,12 +73,12 @@ export default function Products() {
           if (error) throw error;
         }
       }
-
       toast.success(`Compliance evaluated: ${updates.length} products updated`);
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
-    } catch (err: any) {
-      toast.error("Compliance check failed: " + err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Compliance check failed: " + msg);
     } finally {
       setIsRunningCompliance(false);
     }
@@ -106,11 +105,9 @@ export default function Products() {
     },
   });
 
-  // Get live status for all loaded products
-  const productIds = products.map((p: any) => p.id);
+  const productIds = products.map((p) => p.id);
   const { ebayMap, shopifyMap } = useProductLiveStatus(productIds);
 
-  // Fetch unmatched imported listings (no product_id linked)
   const { data: unmatchedEbayIds = new Set<string>() } = useQuery({
     queryKey: ["unmatched-ebay-ids"],
     queryFn: async () => {
@@ -119,7 +116,7 @@ export default function Products() {
         .select("id")
         .is("product_id", null)
         .limit(500);
-      return new Set((data || []).map((r: any) => r.id));
+      return new Set((data || []).map((r) => r.id));
     },
   });
 
@@ -131,45 +128,44 @@ export default function Products() {
         .select("id")
         .is("product_id", null)
         .limit(500);
-      return new Set((data || []).map((r: any) => r.id));
+      return new Set((data || []).map((r) => r.id));
     },
   });
 
   const unmatchedCount = (unmatchedEbayIds instanceof Set ? unmatchedEbayIds.size : 0) +
     (unmatchedShopifyIds instanceof Set ? unmatchedShopifyIds.size : 0);
 
-  // Fetch eBay drafts for drift detection
-  const { data: ebayDraftsMap = new Map() } = useQuery({
+  // Draft data for drift detection & badge status
+  const { data: ebayDraftsMap = new Map<string, Record<string, unknown>>() } = useQuery({
     queryKey: ["ebay-drafts-for-drift", productIds],
     queryFn: async () => {
-      if (productIds.length === 0) return new Map();
+      if (productIds.length === 0) return new Map<string, Record<string, unknown>>();
       const { data } = await supabase
         .from("ebay_drafts")
-        .select("product_id, title, start_price, buy_it_now_price, quantity")
+        .select("product_id, title, start_price, buy_it_now_price, quantity, channel_status")
         .in("product_id", productIds);
-      const map = new Map<string, any>();
-      (data || []).forEach((d: any) => { if (d.product_id) map.set(d.product_id, d); });
+      const map = new Map<string, Record<string, unknown>>();
+      (data || []).forEach((d) => { if (d.product_id) map.set(d.product_id, d); });
       return map;
     },
     enabled: productIds.length > 0,
   });
 
-  const { data: shopifyDraftsMap = new Map() } = useQuery({
+  const { data: shopifyDraftsMap = new Map<string, Record<string, unknown>>() } = useQuery({
     queryKey: ["shopify-drafts-for-drift", productIds],
     queryFn: async () => {
-      if (productIds.length === 0) return new Map();
+      if (productIds.length === 0) return new Map<string, Record<string, unknown>>();
       const { data } = await supabase
         .from("shopify_drafts")
-        .select("product_id, title")
+        .select("product_id, title, channel_status")
         .in("product_id", productIds);
-      const map = new Map<string, any>();
-      (data || []).forEach((d: any) => { if (d.product_id) map.set(d.product_id, d); });
+      const map = new Map<string, Record<string, unknown>>();
+      (data || []).forEach((d) => { if (d.product_id) map.set(d.product_id, d); });
       return map;
     },
     enabled: productIds.length > 0,
   });
 
-  // Detect drift: live data differs from local draft
   const hasDrift = (productId: string): boolean => {
     const ebayLive = ebayMap.get(productId);
     const ebayDraft = ebayDraftsMap instanceof Map ? ebayDraftsMap.get(productId) : null;
@@ -187,8 +183,19 @@ export default function Products() {
     return false;
   };
 
-  // Apply channel filter client-side after fetching live status
-  const filteredProducts = products.filter((p: any) => {
+  const getEbayDraftStatus = (productId: string): "none" | "draft" | "live" => {
+    if (ebayMap.has(productId)) return "live";
+    if (ebayDraftsMap instanceof Map && ebayDraftsMap.has(productId)) return "draft";
+    return "none";
+  };
+
+  const getShopifyDraftStatus = (productId: string): "none" | "draft" | "live" => {
+    if (shopifyMap.has(productId)) return "live";
+    if (shopifyDraftsMap instanceof Map && shopifyDraftsMap.has(productId)) return "draft";
+    return "none";
+  };
+
+  const filteredProducts = products.filter((p) => {
     if (channelFilter === "all") return true;
     if (channelFilter === "live_ebay") return ebayMap.has(p.id);
     if (channelFilter === "live_shopify") return shopifyMap.has(p.id);
@@ -197,125 +204,28 @@ export default function Products() {
     return true;
   });
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const pageIds = filteredProducts.map((p) => p.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => exportCart.selectedIds.has(id));
 
-  const toggleAll = () => {
-    if (selectedIds.size === filteredProducts.length) {
-      setSelectedIds(new Set());
+  const toggleAllPage = () => {
+    if (allPageSelected) {
+      exportCart.removeMany(pageIds);
     } else {
-      setSelectedIds(new Set(filteredProducts.map((p: any) => p.id)));
+      exportCart.addMany(pageIds);
     }
-  };
-
-  const handleMarkChannelReady = async (channel: "ebay" | "shopify") => {
-    const selected = products.filter((p: any) => selectedIds.has(p.id));
-    if (selected.length === 0) return;
-
-    try {
-      let count = 0;
-      for (const p of selected) {
-        if (channel === "ebay") {
-          const { data: existing } = await supabase
-            .from("ebay_drafts").select("id").eq("product_id", p.id).limit(1).maybeSingle();
-          const draft = {
-            product_id: p.id,
-            title: (p.source_product_name || "").substring(0, 80),
-            brand: p.brand,
-            ean: p.barcode,
-            channel_status: "ready",
-            start_price: p.sell_price,
-            quantity: p.quantity_available_for_ebay ?? Math.max(0, Number(p.stock_on_hand) || 0),
-          };
-          if (existing) {
-            await supabase.from("ebay_drafts").update(draft).eq("id", existing.id);
-          } else {
-            await supabase.from("ebay_drafts").insert(draft);
-          }
-        } else {
-          const { data: existing } = await supabase
-            .from("shopify_drafts").select("id").eq("product_id", p.id).limit(1).maybeSingle();
-          const draft = {
-            product_id: p.id,
-            title: p.source_product_name,
-            vendor: p.brand,
-            product_type: p.product_type || p.z_category,
-            channel_status: "ready",
-            status: "draft",
-          };
-          if (existing) {
-            await supabase.from("shopify_drafts").update(draft).eq("id", existing.id);
-          } else {
-            await supabase.from("shopify_drafts").insert(draft);
-          }
-        }
-        count++;
-      }
-
-      toast.success(`${count} products queued for ${channel === "ebay" ? "eBay" : "Shopify"} review`);
-      setSelectedIds(new Set());
-      queryClient.invalidateQueries({ queryKey: ["review-queue"] });
-      navigate("/review");
-    } catch (err: any) {
-      toast.error(`Failed: ${err.message}`);
-    }
-  };
-
-  const handleExportCsv = () => {
-    const selected = products.filter((p: any) => selectedIds.has(p.id));
-    if (selected.length === 0) return;
-
-    const rows = selected.map((p: any) => ({
-      product_name: p.source_product_name,
-      barcode: p.barcode,
-      sku: p.sku,
-      brand: p.brand,
-      stock_on_hand: p.stock_on_hand,
-      cost_price: p.cost_price,
-      sell_price: p.sell_price,
-      compliance_status: p.compliance_status,
-      enrichment_status: p.enrichment_status,
-    }));
-
-    const csv = Papa.unparse(rows);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `products-export-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${selected.length} products to CSV`);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Products</h1>
           <p className="text-muted-foreground text-sm">Manage your product catalog</p>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleRunCompliance} disabled={isRunningCompliance}>
-            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRunningCompliance ? "animate-spin" : ""}`} />
-            Run Compliance
-          </Button>
-          {selectedIds.size > 0 && (
-            <>
-              <Button size="sm" variant="secondary" onClick={() => handleMarkChannelReady("ebay")}>Mark eBay Ready</Button>
-              <Button size="sm" variant="secondary" onClick={() => handleMarkChannelReady("shopify")}>Mark Shopify Ready</Button>
-              <Button size="sm" variant="secondary" onClick={handleExportCsv}>
-                <Download className="h-3.5 w-3.5 mr-1" />
-                Export CSV
-              </Button>
-            </>
-          )}
-        </div>
+        <Button size="sm" variant="outline" onClick={handleRunCompliance} disabled={isRunningCompliance}>
+          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRunningCompliance ? "animate-spin" : ""}`} />
+          Run Compliance
+        </Button>
       </div>
 
       {/* Filters */}
@@ -376,8 +286,8 @@ export default function Products() {
                 <TableRow>
                   <TableHead className="w-10">
                     <Checkbox
-                      checked={selectedIds.size === filteredProducts.length && filteredProducts.length > 0}
-                      onCheckedChange={toggleAll}
+                      checked={allPageSelected}
+                      onCheckedChange={toggleAllPage}
                     />
                   </TableHead>
                   <TableHead>Product Name</TableHead>
@@ -386,27 +296,29 @@ export default function Products() {
                   <TableHead>Stock</TableHead>
                   <TableHead>Cost</TableHead>
                   <TableHead>RRP</TableHead>
+                  <TableHead>Drafts</TableHead>
                   <TableHead>Live</TableHead>
                   <TableHead>Compliance</TableHead>
                   <TableHead>Enrichment</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
                       Loading products...
                     </TableCell>
                   </TableRow>
                 ) : filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
                       <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       No products found. Import stock data to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts.map((p: any) => (
+                  filteredProducts.map((p) => (
                     <TableRow
                       key={p.id}
                       className="cursor-pointer hover:bg-muted/30"
@@ -414,8 +326,8 @@ export default function Products() {
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Checkbox
-                          checked={selectedIds.has(p.id)}
-                          onCheckedChange={() => toggleSelect(p.id)}
+                          checked={exportCart.selectedIds.has(p.id)}
+                          onCheckedChange={() => exportCart.toggleProduct(p.id)}
                         />
                       </TableCell>
                       <TableCell className="font-medium max-w-[300px] truncate">
@@ -426,6 +338,13 @@ export default function Products() {
                       <TableCell>{p.stock_on_hand ?? "—"}</TableCell>
                       <TableCell>{p.cost_price ? `$${Number(p.cost_price).toFixed(2)}` : "—"}</TableCell>
                       <TableCell>{p.sell_price ? `$${Number(p.sell_price).toFixed(2)}` : "—"}</TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <DraftStatusBadges
+                          productId={p.id}
+                          ebayDraftStatus={getEbayDraftStatus(p.id)}
+                          shopifyDraftStatus={getShopifyDraftStatus(p.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <LiveStatusBadges
@@ -448,6 +367,9 @@ export default function Products() {
                         />
                       </TableCell>
                       <TableCell><EnrichmentBadge status={p.enrichment_status} /></TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <ProductRowKebab product={p} />
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -456,11 +378,13 @@ export default function Products() {
           </div>
         </CardContent>
       </Card>
+
+      <ExportFloatingBar />
     </div>
   );
 }
 
-function EnrichmentBadge({ status }: { status?: string }) {
+function EnrichmentBadge({ status }: { status?: string | null }) {
   if (!status) return <Badge variant="outline" className="text-[10px]">Pending</Badge>;
   const map: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
     pending: "outline",
