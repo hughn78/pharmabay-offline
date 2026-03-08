@@ -19,20 +19,26 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import Papa from "papaparse";
 
-// eBay File Exchange header
-const EBAY_HEADERS = [
-  "*Action(SiteID=Australia|Country=AU|Currency=AUD|Version=941)",
-  "*Category", "Product:UPC", "Product:EAN", "Product:EPID", "Product:Brand",
-  "Product:MPN", "Product:IncludePreFilledItemInformation",
-  "Product:IncludeStockPhotoURL", "Product:ReturnSearchResultsOnDuplicates",
-  "Title", "Subtitle", "Description", "*ConditionID", "PicURL",
-  "*Quantity", "*Format", "*StartPrice", "BuyItNowPrice", "*Duration",
-  "ImmediatePayRequired", "*Location", "ShippingType",
-  "ShippingService-1:Option", "ShippingService-1:Cost", "ShippingService-1:Priority",
-  "ShippingService-2:Option", "ShippingService-2:Cost", "ShippingService-2:Priority",
-  "DispatchTimeMax", "CustomLabel", "ReturnsAcceptedOption", "RefundOption",
-  "ReturnsWithinOption", "ShippingCostPaidByOption", "AdditionalDetails",
-  "ShippingProfileName", "ReturnProfileName", "PaymentProfileName",
+// eBay AU Draft Listings template
+const EBAY_DRAFT_INFO_LINES = [
+  `#INFO,Version=0.0.2,Template= eBay-draft-listings-template_AU,,,,,,,,`,
+  `#INFO Action and Category ID are required fields. 1) Set Action to Draft 2) Please find the category ID for your listings here: https://pages.ebay.com/sellerinformation/news/categorychanges.html,,,,,,,,,,`,
+  `"#INFO After you've successfully uploaded your draft from the Seller Hub Reports tab, complete your drafts to active listings here: https://www.ebay.com.au/sh/lst/drafts",,,,,,,,,,`,
+  `#INFO,,,,,,,,,,`,
+];
+
+const EBAY_DRAFT_HEADERS = [
+  "Action(SiteID=Australia|Country=AU|Currency=AUD|Version=1193|CC=UTF-8)",
+  "Custom label (SKU)",
+  "Category ID",
+  "Title",
+  "UPC",
+  "Price",
+  "Quantity",
+  "Item photo URL",
+  "Condition ID",
+  "Description",
+  "Format",
 ];
 
 function downloadCsv(content: string, filename: string) {
@@ -160,47 +166,41 @@ export default function ReviewQueue() {
       imageMap.set(img.product_id, list);
     });
 
+    // Helper: CSV-escape a single field value
+    const csvEscape = (val: any): string => {
+      const s = String(val ?? "");
+      if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
+        return `"${s.replace(/"/g, '""')}"`;
+      }
+      return s;
+    };
+
     const rows = targets.map((d: any) => {
       const picUrls = (d.image_urls?.length ? d.image_urls : imageMap.get(d.product_id) || []).join("|");
+      const conditionRaw = d.condition_id || "1000";
+      const conditionVal = conditionRaw === "NEW" ? "1000" : conditionRaw;
       return [
-        "Add", // Action
-        d.category_id || "", // Category
-        d.upc || "", // UPC
-        d.ean || "", // EAN
-        d.epid || "", // EPID
-        d.brand || d.products?.brand || "", // Brand
-        d.mpn || "", // MPN
-        "TRUE", // IncludePreFilledItemInformation
-        "TRUE", // IncludeStockPhotoURL
-        "TRUE", // ReturnSearchResultsOnDuplicates
-        (d.title || "").substring(0, 80), // Title
-        d.subtitle || "", // Subtitle
-        d.description_html || d.description_plain || "", // Description
-        d.condition_id || "1000", // ConditionID
-        picUrls, // PicURL
-        d.quantity ?? 0, // Quantity
-        d.pricing_mode || "FixedPrice", // Format
-        d.start_price ?? d.products?.sell_price ?? "", // StartPrice
-        d.buy_it_now_price || "", // BuyItNowPrice
-        "GTC", // Duration
-        "TRUE", // ImmediatePayRequired
-        "", // Location
-        "", // ShippingType
-        "", "", "", // Shipping 1
-        "", "", "", // Shipping 2
-        "3", // DispatchTimeMax
-        d.products?.sku || "", // CustomLabel
-        "ReturnsNotAccepted", // ReturnsAcceptedOption
-        "", // RefundOption
-        "", // ReturnsWithinOption
-        "Buyer", // ShippingCostPaidByOption
-        "", // AdditionalDetails
-        "", "", "", // Profile names
+        "Draft",                                                    // Action
+        d.products?.sku || d.ebay_inventory_sku || "",              // Custom label (SKU)
+        d.category_id || "",                                        // Category ID
+        (d.title || "").substring(0, 80),                           // Title
+        d.upc || "",                                                // UPC
+        d.start_price ?? d.buy_it_now_price ?? d.products?.sell_price ?? "", // Price
+        d.quantity ?? 0,                                            // Quantity
+        picUrls,                                                    // Item photo URL
+        conditionVal,                                               // Condition ID
+        d.description_html || d.description_plain || "",            // Description
+        d.pricing_mode || "FixedPrice",                             // Format
       ];
     });
 
-    const csvContent = [EBAY_HEADERS.join(","), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))].join("\n");
-    downloadCsv(csvContent, `ebay-file-exchange-${new Date().toISOString().slice(0, 10)}.csv`);
+    const csvLines = [
+      ...EBAY_DRAFT_INFO_LINES,
+      EBAY_DRAFT_HEADERS.map(csvEscape).join(","),
+      ...rows.map(r => r.map(csvEscape).join(",")),
+    ];
+    const csvContent = "\uFEFF" + csvLines.join("\n");
+    downloadCsv(csvContent, `eBay-draft-listings-${new Date().toISOString().slice(0, 10)}.csv`);
 
     // Mark exported
     const exportedIds = targets.map((d: any) => d.id);
