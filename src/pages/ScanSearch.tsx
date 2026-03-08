@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ComplianceBadge } from "@/components/ui/ComplianceBadge";
 import { Button } from "@/components/ui/button";
-import { Scan, Search, Package, Clock, ArrowRight } from "lucide-react";
+import { Scan, Search, Package, Clock, ArrowRight, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -159,7 +159,20 @@ export default function ScanSearch() {
                         {p.barcode || p.sku}
                       </div>
                     </div>
-                    <ComplianceBadge status={p.compliance_status} />
+                    <div className="flex items-center gap-2">
+                      <ComplianceBadge status={p.compliance_status} />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/products/${p.id}`);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </button>
               ))}
@@ -192,11 +205,26 @@ export default function ScanSearch() {
                       <div className="font-medium">{s.source_product_name || "Unknown"}</div>
                       <div className="text-xs text-muted-foreground font-mono">{s.barcode}</div>
                     </div>
-                    {s.isNew && (
-                      <Badge variant="outline" className="text-xs">
-                        New
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {s.isNew && (
+                        <Badge variant="outline" className="text-xs">
+                          New
+                        </Badge>
+                      )}
+                      {s.id && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 h-7 w-7"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/products/${s.id}`);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>

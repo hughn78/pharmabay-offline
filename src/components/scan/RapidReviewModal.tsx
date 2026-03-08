@@ -22,7 +22,9 @@ import {
   ImageIcon,
   DollarSign,
   Layers,
+  Pencil,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -35,6 +37,7 @@ interface Props {
 
 export function RapidReviewModal({ productId, onClose, onSaveAndNext }: Props) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", productId],
@@ -281,6 +284,18 @@ export function RapidReviewModal({ productId, onClose, onSaveAndNext }: Props) {
                           {r}
                         </Badge>
                       ))}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-amber-500 hover:bg-amber-600 text-white font-semibold gap-2 ml-auto"
+                      onClick={() => {
+                        onClose();
+                        navigate(`/products/${product.id}`);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit Product
+                    </Button>
                   </div>
                 </div>
               </div>
