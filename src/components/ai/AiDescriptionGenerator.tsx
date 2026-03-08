@@ -7,6 +7,7 @@ import { Sparkles, Loader2, CheckCircle, Copy } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface Props {
   productId: string;
