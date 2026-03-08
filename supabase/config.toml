@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.import-commit]
 verify_jwt = false
+
+[functions.ebay-auth]
+verify_jwt = false
+
+[functions.ebay-inventory]
+verify_jwt = false
