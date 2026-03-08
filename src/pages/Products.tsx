@@ -424,10 +424,17 @@ export default function Products() {
                       <TableCell>{p.cost_price ? `$${Number(p.cost_price).toFixed(2)}` : "—"}</TableCell>
                       <TableCell>{p.sell_price ? `$${Number(p.sell_price).toFixed(2)}` : "—"}</TableCell>
                       <TableCell>
-                        <LiveStatusBadges
-                          ebayLive={ebayMap.get(p.id)}
-                          shopifyLive={shopifyMap.get(p.id)}
-                        />
+                        <div className="flex items-center gap-1">
+                          <LiveStatusBadges
+                            ebayLive={ebayMap.get(p.id)}
+                            shopifyLive={shopifyMap.get(p.id)}
+                          />
+                          {hasDrift(p.id) && (
+                            <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600">
+                              Drift
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <ComplianceBadgeWithOverride
