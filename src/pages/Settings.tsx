@@ -163,6 +163,50 @@ function PricingSettings() {
   );
 }
 
+function GoogleSettings() {
+  const [isTesting, setIsTesting] = useState(false);
+
+  const handleTestSearch = async () => {
+    setIsTesting(true);
+    try {
+      const res = await supabase.functions.invoke("scrape-and-generate", {
+        body: { url: "https://www.google.com", test: true },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+      toast.success("Google search connection is working");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.toLowerCase().includes("not configured") || message.toLowerCase().includes("api key")) {
+        toast.error("Google API key not configured. Add it as a server-side secret.");
+      } else {
+        toast.error("Test failed", { description: message });
+      }
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Search className="h-4 w-4" /> Google Custom Search
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Google API credentials are stored as secure server-side secrets.
+        </p>
+        <Button variant="outline" onClick={handleTestSearch} disabled={isTesting}>
+          {isTesting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Test Search
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 // EbaySettings is now imported from @/components/ebay/EbaySettings
 
 function SettingField({ label, value, onChange, placeholder, type = "text" }: {

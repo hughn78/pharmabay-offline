@@ -532,6 +532,22 @@ function ShopifyTab({ product, draft }: { product: any; draft: any }) {
     google_product_category: draft?.google_product_category || "",
   });
 
+  useEffect(() => {
+    if (draft) {
+      setForm({
+        title: draft.title || "",
+        handle: draft.handle || "",
+        vendor: draft.vendor || "",
+        product_type: draft.product_type || "",
+        product_category: draft.product_category || "",
+        description_html: draft.description_html || "",
+        seo_title: draft.seo_title || "",
+        seo_description: draft.seo_description || "",
+        google_product_category: draft.google_product_category || "",
+      });
+    }
+  }, [draft]);
+
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
