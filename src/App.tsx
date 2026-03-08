@@ -8,7 +8,8 @@ import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import ScanSearch from "./pages/ScanSearch";
 import Products from "./pages/Products";
 import ReviewQueue from "./pages/ReviewQueue";
-import Exports from "./pages/Exports";
+import ExportBuilder from "./pages/ExportBuilder";
+import ExportHistory from "./pages/ExportHistory";
 import ImportStock from "./pages/ImportStock";
 import ChannelSync from "./pages/ChannelSync";
 import Settings from "./pages/Settings";
@@ -38,7 +39,9 @@ const App = () => (
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductEditor />} />
               <Route path="/review" element={<ReviewQueue />} />
-              <Route path="/exports" element={<Exports />} />
+              <Route path="/exports" element={<ExportHistory />} />
+              <Route path="/exports/new" element={<ExportBuilder />} />
+              <Route path="/exports/history" element={<ExportHistory />} />
               <Route path="/import" element={<ImportStock />} />
               <Route path="/sync" element={<ChannelSync />} />
               <Route path="/reconciliation" element={<ShopifyReconciliation />} />
