@@ -186,56 +186,7 @@ export default function ProductEditor() {
   );
 }
 
-function GeneralTab({ product, onSave }: { product: any; onSave: (u: any) => void }) {
-  const [form, setForm] = useState({
-    source_product_name: product.source_product_name || "",
-    barcode: product.barcode || "",
-    sku: product.sku || "",
-    brand: product.brand || "",
-    department: product.department || "",
-    z_category: product.z_category || "",
-    cost_price: product.cost_price || "",
-    sell_price: product.sell_price || "",
-    stock_on_hand: product.stock_on_hand || "",
-    weight_grams: product.weight_grams || 200,
-    notes_internal: product.notes_internal || "",
-  });
-
-  const handleChange = (field: string, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  return (
-    <Card>
-      <CardContent className="pt-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Product Name" value={form.source_product_name} onChange={(v) => handleChange("source_product_name", v)} />
-          <FormField label="Barcode" value={form.barcode} onChange={(v) => handleChange("barcode", v)} mono />
-          <FormField label="SKU" value={form.sku} onChange={(v) => handleChange("sku", v)} mono />
-          <FormField label="Brand" value={form.brand} onChange={(v) => handleChange("brand", v)} />
-          <FormField label="Department" value={form.department} onChange={(v) => handleChange("department", v)} />
-          <FormField label="Category" value={form.z_category} onChange={(v) => handleChange("z_category", v)} />
-          <FormField label="Cost Price" value={form.cost_price} onChange={(v) => handleChange("cost_price", v)} type="number" />
-          <FormField label="Sell Price / RRP" value={form.sell_price} onChange={(v) => handleChange("sell_price", v)} type="number" />
-          <FormField label="Stock on Hand" value={form.stock_on_hand} onChange={(v) => handleChange("stock_on_hand", v)} type="number" />
-          <FormField label="Weight (grams)" value={form.weight_grams} onChange={(v) => handleChange("weight_grams", v)} type="number" />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm">Internal Notes</Label>
-          <Textarea
-            value={form.notes_internal}
-            onChange={(e) => handleChange("notes_internal", e.target.value)}
-            placeholder="Staff notes..."
-            rows={3}
-          />
-        </div>
-        <Button onClick={() => onSave(form)}>
-          <Save className="h-4 w-4 mr-2" /> Save Product
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
+// GeneralTab moved to src/components/products/GeneralTab.tsx
 
 function EnrichmentTab({ product }: { product: any }) {
   const queryClient = useQueryClient();
