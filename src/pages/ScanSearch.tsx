@@ -218,14 +218,3 @@ export default function ScanSearch() {
   );
 }
 
-function ComplianceBadge({ status }: { status?: string }) {
-  if (!status) return null;
-  const map: Record<string, string> = {
-    permitted: "status-permitted",
-    review_required: "status-review",
-    blocked: "status-blocked",
-  };
-  return (
-    <Badge className={`text-[10px] ${map[status] || ""}`}>{status?.replace("_", " ")}</Badge>
-  );
-}
