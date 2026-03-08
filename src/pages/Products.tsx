@@ -342,7 +342,7 @@ export default function Products() {
               </SelectContent>
             </Select>
             <Select value={channelFilter} onValueChange={setChannelFilter}>
-              <SelectTrigger className="w-[170px]">
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Channel" />
               </SelectTrigger>
               <SelectContent>
@@ -350,8 +350,16 @@ export default function Products() {
                 <SelectItem value="live_ebay">Live on eBay</SelectItem>
                 <SelectItem value="live_shopify">Live on Shopify</SelectItem>
                 <SelectItem value="not_live">Not Live</SelectItem>
+                <SelectItem value="drift">Differs from Draft</SelectItem>
               </SelectContent>
             </Select>
+            {unmatchedCount > 0 && (
+              <Badge variant="destructive" className="text-xs cursor-pointer"
+                onClick={() => navigate("/channel-imports")}
+              >
+                {unmatchedCount} Unmatched Import{unmatchedCount > 1 ? "s" : ""}
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>
