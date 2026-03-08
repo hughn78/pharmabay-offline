@@ -8,6 +8,7 @@ import { Globe, Loader2, AlertTriangle, Sparkles } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface Props {
   product: any;
