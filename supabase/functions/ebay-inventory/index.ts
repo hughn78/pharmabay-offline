@@ -116,7 +116,7 @@ serve(async (req) => {
   try {
     const { action, ...params } = await req.json();
     const conn = await getConnection(supabase);
-    const token = await getValidToken(supabase, conn);
+    const ebayToken = await getValidToken(supabase, conn);
     const apiBase = getApiBase(conn.environment);
     const marketplaceId = conn.marketplace_id || "EBAY_AU";
 
