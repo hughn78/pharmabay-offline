@@ -205,11 +205,26 @@ export default function ScanSearch() {
                       <div className="font-medium">{s.source_product_name || "Unknown"}</div>
                       <div className="text-xs text-muted-foreground font-mono">{s.barcode}</div>
                     </div>
-                    {s.isNew && (
-                      <Badge variant="outline" className="text-xs">
-                        New
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {s.isNew && (
+                        <Badge variant="outline" className="text-xs">
+                          New
+                        </Badge>
+                      )}
+                      {s.id && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 h-7 w-7"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/products/${s.id}`);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>

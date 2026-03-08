@@ -284,6 +284,18 @@ export function RapidReviewModal({ productId, onClose, onSaveAndNext }: Props) {
                           {r}
                         </Badge>
                       ))}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-amber-500 hover:bg-amber-600 text-white font-semibold gap-2 ml-auto"
+                      onClick={() => {
+                        onClose();
+                        navigate(`/products/${product.id}`);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit Product
+                    </Button>
                   </div>
                 </div>
               </div>
