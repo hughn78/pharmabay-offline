@@ -159,7 +159,20 @@ export default function ScanSearch() {
                         {p.barcode || p.sku}
                       </div>
                     </div>
-                    <ComplianceBadge status={p.compliance_status} />
+                    <div className="flex items-center gap-2">
+                      <ComplianceBadge status={p.compliance_status} />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/products/${p.id}`);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </button>
               ))}
