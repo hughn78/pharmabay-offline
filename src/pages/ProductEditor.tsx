@@ -31,6 +31,7 @@ import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel"
 import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
 import { SourcePagesPanel } from "@/components/enrichment/SourcePagesPanel";
 import { EnrichmentImageUpload } from "@/components/enrichment/EnrichmentImageUpload";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 export default function ProductEditor() {
   const { id } = useParams();
