@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers, Loader2 } from "lucide-react";
+import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers, Loader2, Database, Download } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
@@ -73,6 +73,7 @@ export default function Settings() {
           <TabsTrigger value="google">Google</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="data">Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pharmacy" className="mt-4">
@@ -101,6 +102,10 @@ export default function Settings() {
 
         <TabsContent value="categories" className="mt-4">
           <CategoryMappings />
+        </TabsContent>
+
+        <TabsContent value="data" className="mt-4">
+          <DatabaseExport />
         </TabsContent>
       </Tabs>
     </div>
@@ -263,6 +268,70 @@ function CategoryMappings() {
             </Table>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function DatabaseExport() {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/export-sqlite`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || "Export failed");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pharmabay_export_${new Date().toISOString().slice(0, 10)}.sqlite`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("Database exported successfully");
+    } catch (err: any) {
+      toast.error("Export failed", { description: err.message });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Database className="h-4 w-4" /> Database Export
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Export the entire database as an SQLite file. This includes all products, drafts, listings, snapshots, and settings.
+        </p>
+        <Button onClick={handleExport} disabled={isExporting} className="gap-2">
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          {isExporting ? "Exporting…" : "Export as SQLite"}
+        </Button>
       </CardContent>
     </Card>
   );
