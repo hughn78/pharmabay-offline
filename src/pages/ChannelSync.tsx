@@ -49,7 +49,8 @@ export default function ChannelSync() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ebay" className="mt-4">
+        <TabsContent value="ebay" className="mt-4 space-y-4">
+          <EbayBulkPanel />
           <JobList jobs={ebayJobs} platform="ebay" />
         </TabsContent>
 
