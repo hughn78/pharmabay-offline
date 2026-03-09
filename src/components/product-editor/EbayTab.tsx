@@ -129,7 +129,16 @@ export function EbayTab({ product, draft }: EbayTabProps) {
           </div>
 
           <FormField label="Subtitle" value={form.subtitle} onChange={(v) => handleChange("subtitle", v)} />
-          <FormField label="Category ID" value={form.category_id} onChange={(v) => handleChange("category_id", v)} />
+
+          <div className="space-y-1.5">
+            <Label className="text-sm">eBay Category</Label>
+            <EbayCategoryPicker
+              value={form.category_id}
+              onChange={(catId, catName) => {
+                setForm((prev) => ({ ...prev, category_id: catId }));
+              }}
+            />
+          </div>
           <FormField label="ePID" value={form.epid} onChange={(v) => handleChange("epid", v)}>
             {suggestedEpid && !form.epid && (
               <p className="text-xs text-muted-foreground mt-1">

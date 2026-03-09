@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.extract-page-images]
 verify_jwt = false
+
+[functions.fetch-ebay-categories]
+verify_jwt = false

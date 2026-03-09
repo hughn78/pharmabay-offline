@@ -346,6 +346,27 @@ export function EbaySettings() {
         </CardContent>
       </Card>
 
+      {/* Category Taxonomy Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" /> eBay Category Taxonomy
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Import the full eBay Australia category tree for searchable category selection in drafts.
+          </p>
+          <Button
+            onClick={() => fetchCategories.mutate()}
+            disabled={fetchCategories.isPending || !isConnected}
+          >
+            {fetchCategories.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Fetch eBay AU Categories
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Defaults Card */}
       <Card>
         <CardHeader>
