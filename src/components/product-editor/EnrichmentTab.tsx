@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { SourcePagesPanel } from "@/components/enrichment/SourcePagesPanel";
 import { EnrichmentImageUpload } from "@/components/enrichment/EnrichmentImageUpload";
+import { ResearchHistoryPanel } from "./ResearchHistoryPanel";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { upsertEbayDraft, upsertShopifyDraft } from "@/lib/draft-upsert";
 
