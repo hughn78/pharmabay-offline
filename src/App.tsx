@@ -20,6 +20,7 @@ import ShopifyStockSync from "./pages/ShopifyStockSync";
 import ReconciliationReport from "./pages/ReconciliationReport";
 import ChannelListingImports from "./pages/ChannelListingImports";
 import EbayCallback from "./pages/EbayCallback";
+import MarketResearch from "./pages/MarketResearch";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
