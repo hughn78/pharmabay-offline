@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
     }
 
     // Load queue item + product
-    const { data: queueItem, error: qErr } = await supabase
+    const { data: queueItem, error: qErr } = await adminSupabase
       .from("product_research_queue")
       .select("*, product:products(*)")
       .eq("id", queueItemId)
