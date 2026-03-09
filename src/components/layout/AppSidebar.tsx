@@ -11,7 +11,7 @@ import {
   ArrowLeftRight,
   ArrowUpDown,
   FileDown,
-  History,
+  Sparkles,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -43,6 +43,7 @@ const navItems = [
   { title: "Recon Report", url: "/recon-report", icon: FileText },
   { title: "Stock Sync", url: "/stock-sync", icon: ArrowUpDown },
   { title: "Channel Imports", url: "/channel-imports", icon: FileDown },
+  { title: "Market Research", url: "/market-research", icon: Sparkles },
   { title: "Settings", url: "/settings", icon: Settings },
   { title: "Audit Log", url: "/audit", icon: FileText },
 ];
