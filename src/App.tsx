@@ -52,6 +52,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/ebay-callback" element={<EbayCallback />} />
               <Route path="/audit" element={<AuditLog />} />
+              <Route path="/market-research" element={<MarketResearch />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

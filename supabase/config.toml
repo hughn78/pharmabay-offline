@@ -1,5 +1,8 @@
 project_id = "gvsssciqwzqehwjafqqr"
 
+[functions.market-research]
+verify_jwt = false
+
 [functions.shopify-stock-sync]
 verify_jwt = false
 
