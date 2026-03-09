@@ -356,7 +356,7 @@ Deno.serve(async (req) => {
     console.log(`[market-research] Got ${sources.length} usable sources`);
 
     // → extracting
-    await supabase
+    await adminSupabase
       .from("product_research_queue")
       .update({ status: "extracting" })
       .eq("id", queueItemId);
