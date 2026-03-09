@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
 import { EbayPublishPanel } from "@/components/ebay/EbayPublishPanel";
 import { EbayCategoryPicker } from "@/components/ebay/EbayCategoryPicker";
+import { CompetitorPricingPanel } from "@/components/ebay/CompetitorPricingPanel";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
 import { FormField } from "./FormField";
@@ -181,6 +182,12 @@ export function EbayTab({ product, draft }: EbayTabProps) {
           </div>
         </CardContent>
       </Card>
+
+      <CompetitorPricingPanel
+        productName={(product.source_product_name as string) || (product.normalized_product_name as string) || ""}
+        ourPrice={Number(form.buy_it_now_price || product.sell_price || 0)}
+        costPrice={Number(product.cost_price || 0)}
+      />
 
       <EbayPublishPanel productId={product.id as string} product={product} draft={draft} />
     </div>
