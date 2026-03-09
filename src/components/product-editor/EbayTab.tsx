@@ -183,6 +183,12 @@ export function EbayTab({ product, draft }: EbayTabProps) {
         </CardContent>
       </Card>
 
+      <CompetitorPricingPanel
+        productName={(product.source_product_name as string) || (product.normalized_product_name as string) || ""}
+        ourPrice={Number(form.buy_it_now_price || product.sell_price || 0)}
+        costPrice={Number(product.cost_price || 0)}
+      />
+
       <EbayPublishPanel productId={product.id as string} product={product} draft={draft} />
     </div>
   );
