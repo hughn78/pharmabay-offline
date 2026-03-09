@@ -127,6 +127,19 @@ export function EbaySettings() {
     onError: (err: Error) => toast.error(`Test failed: ${err.message}`),
   });
 
+  const fetchCategories = useMutation({
+    mutationFn: async () => {
+      const res = await supabase.functions.invoke("fetch-ebay-categories");
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Imported ${data.total} eBay categories`);
+    },
+    onError: (err: Error) => toast.error(`Category import failed: ${err.message}`),
+  });
+
   const refreshToken = useMutation({
     mutationFn: async () => {
       const res = await supabase.functions.invoke("ebay-auth", {
