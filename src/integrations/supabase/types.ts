@@ -802,6 +802,48 @@ export type Database = {
           },
         ]
       }
+      market_research_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          failed_count: number | null
+          id: string
+          partial_count: number | null
+          started_at: string | null
+          status: string | null
+          success_count: number | null
+          total_products: number | null
+          triggered_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          partial_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          success_count?: number | null
+          total_products?: number | null
+          triggered_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          partial_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          success_count?: number | null
+          total_products?: number | null
+          triggered_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pricebook_import_runs: {
         Row: {
           completed_at: string | null
@@ -855,6 +897,56 @@ export type Database = {
           wholesaler?: string
         }
         Relationships: []
+      }
+      product_enrichment_summary: {
+        Row: {
+          created_at: string | null
+          fields_blank_count: number | null
+          fields_filled_count: number | null
+          id: string
+          last_researched_at: string | null
+          needs_review: boolean | null
+          overall_confidence: number | null
+          product_id: string | null
+          research_notes: string | null
+          source_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fields_blank_count?: number | null
+          fields_filled_count?: number | null
+          id?: string
+          last_researched_at?: string | null
+          needs_review?: boolean | null
+          overall_confidence?: number | null
+          product_id?: string | null
+          research_notes?: string | null
+          source_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fields_blank_count?: number | null
+          fields_filled_count?: number | null
+          id?: string
+          last_researched_at?: string | null
+          needs_review?: boolean | null
+          overall_confidence?: number | null
+          product_id?: string | null
+          research_notes?: string | null
+          source_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_enrichment_summary_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_images: {
         Row: {
@@ -998,6 +1090,130 @@ export type Database = {
             columns: ["resolved_product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_research_queue: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          last_attempt_at: string | null
+          priority: number | null
+          product_id: string | null
+          queued_at: string | null
+          queued_by: string | null
+          research_run_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          priority?: number | null
+          product_id?: string | null
+          queued_at?: string | null
+          queued_by?: string | null
+          research_run_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          priority?: number | null
+          product_id?: string | null
+          queued_at?: string | null
+          queued_by?: string | null
+          research_run_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_research_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_research_queue_research_run_id_fkey"
+            columns: ["research_run_id"]
+            isOneToOne: false
+            referencedRelation: "market_research_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_research_results: {
+        Row: {
+          auto_filled_fields: string[] | null
+          confidence_score: number | null
+          created_at: string | null
+          extracted_payload: Json | null
+          fields_found: string[] | null
+          id: string
+          product_id: string | null
+          queue_item_id: string | null
+          research_run_id: string | null
+          source_domain: string | null
+          source_title: string | null
+          source_url: string | null
+        }
+        Insert: {
+          auto_filled_fields?: string[] | null
+          confidence_score?: number | null
+          created_at?: string | null
+          extracted_payload?: Json | null
+          fields_found?: string[] | null
+          id?: string
+          product_id?: string | null
+          queue_item_id?: string | null
+          research_run_id?: string | null
+          source_domain?: string | null
+          source_title?: string | null
+          source_url?: string | null
+        }
+        Update: {
+          auto_filled_fields?: string[] | null
+          confidence_score?: number | null
+          created_at?: string | null
+          extracted_payload?: Json | null
+          fields_found?: string[] | null
+          id?: string
+          product_id?: string | null
+          queue_item_id?: string | null
+          research_run_id?: string | null
+          source_domain?: string | null
+          source_title?: string | null
+          source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_research_results_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_research_results_queue_item_id_fkey"
+            columns: ["queue_item_id"]
+            isOneToOne: false
+            referencedRelation: "product_research_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_research_results_research_run_id_fkey"
+            columns: ["research_run_id"]
+            isOneToOne: false
+            referencedRelation: "market_research_runs"
             referencedColumns: ["id"]
           },
         ]
