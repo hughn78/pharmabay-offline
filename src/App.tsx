@@ -51,6 +51,7 @@ const App = () => (
               <Route path="/channel-imports" element={<ChannelListingImports />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/ebay-callback" element={<EbayCallback />} />
+              <Route path="/ebay/callback" element={<EbayCallback />} />
               <Route path="/audit" element={<AuditLog />} />
               <Route path="/market-research" element={<MarketResearch />} />
             </Route>
