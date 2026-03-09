@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useExportCart } from "@/stores/useExportCart";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ const SESSION_RUN_KEY = "pharma_market_research_run_id";
 export default function MarketResearch() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const exportCart = useExportCart();
 
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [activeRunId, setActiveRunId] = useState<string | null>(
@@ -23,6 +25,13 @@ export default function MarketResearch() {
   );
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState("select");
+
+  // Auto-import selected products from export cart
+  useEffect(() => {
+    if (exportCart.count > 0 && selectedProductIds.size === 0) {
+      setSelectedProductIds(new Set(exportCart.selectedIds));
+    }
+  }, []);
 
   // Persist run ID to session
   useEffect(() => {

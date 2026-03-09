@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -7,9 +8,10 @@ interface FormFieldProps {
   onChange: (v: string) => void;
   type?: string;
   mono?: boolean;
+  children?: ReactNode;
 }
 
-export function FormField({ label, value, onChange, type = "text", mono = false }: FormFieldProps) {
+export function FormField({ label, value, onChange, type = "text", mono = false, children }: FormFieldProps) {
   return (
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
@@ -19,6 +21,7 @@ export function FormField({ label, value, onChange, type = "text", mono = false 
         type={type}
         className={mono ? "font-mono" : ""}
       />
+      {children}
     </div>
   );
 }

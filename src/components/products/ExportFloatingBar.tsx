@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { X, ArrowRight } from "lucide-react";
+import { X, ArrowRight, Sparkles } from "lucide-react";
 import { useExportCart } from "@/stores/useExportCart";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -24,6 +24,13 @@ export function ExportFloatingBar() {
             </span>
             <Button size="sm" variant="ghost" onClick={clearAll}>
               <X className="h-3.5 w-3.5 mr-1" /> Clear
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate("/market-research")}
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" /> Research
             </Button>
             <Button
               size="sm"

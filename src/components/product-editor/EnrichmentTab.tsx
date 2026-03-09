@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { SourcePagesPanel } from "@/components/enrichment/SourcePagesPanel";
 import { EnrichmentImageUpload } from "@/components/enrichment/EnrichmentImageUpload";
+import { ResearchHistoryPanel } from "./ResearchHistoryPanel";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { upsertEbayDraft, upsertShopifyDraft } from "@/lib/draft-upsert";
 
@@ -101,6 +102,7 @@ export function EnrichmentTab({ product }: EnrichmentTabProps) {
 
   return (
     <div className="space-y-4">
+      <ResearchHistoryPanel productId={product.id as string} />
       <SourcePagesPanel product={product} />
       <EnrichmentImageUpload productId={product.id as string} />
 

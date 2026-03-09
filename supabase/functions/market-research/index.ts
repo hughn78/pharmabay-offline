@@ -256,7 +256,31 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Validate JWT
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+
+  const token = authHeader.replace("Bearer ", "");
+  const { error: authError } = await supabase.auth.getClaims(token);
+  if (authError) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const adminSupabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -272,7 +296,7 @@ Deno.serve(async (req) => {
     }
 
     // Load queue item + product
-    const { data: queueItem, error: qErr } = await supabase
+    const { data: queueItem, error: qErr } = await adminSupabase
       .from("product_research_queue")
       .select("*, product:products(*)")
       .eq("id", queueItemId)
@@ -288,7 +312,7 @@ Deno.serve(async (req) => {
     const product = queueItem.product as Record<string, unknown>;
 
     // → searching
-    await supabase
+    await adminSupabase
       .from("product_research_queue")
       .update({ status: "searching", last_attempt_at: new Date().toISOString() })
       .eq("id", queueItemId);
@@ -332,7 +356,7 @@ Deno.serve(async (req) => {
     console.log(`[market-research] Got ${sources.length} usable sources`);
 
     // → extracting
-    await supabase
+    await adminSupabase
       .from("product_research_queue")
       .update({ status: "extracting" })
       .eq("id", queueItemId);
@@ -340,15 +364,17 @@ Deno.serve(async (req) => {
     const extracted = await extractWithAI(product, sources, lovableKey);
 
     if (!extracted) {
-      await supabase
+      await adminSupabase
         .from("product_research_queue")
         .update({ status: "failed", error_message: "AI extraction returned null" })
         .eq("id", queueItemId);
 
-      // Still update run counter
-      await supabase.rpc("increment_run_failed" as never, {
-        run_id: queueItem.research_run_id,
-      }).catch(() => null);
+      // Update run counter
+      await adminSupabase
+        .from("market_research_runs")
+        .update({ failed_count: supabase.raw("failed_count + 1") })
+        .eq("id", queueItem.research_run_id)
+        .catch(() => null);
 
       return new Response(
         JSON.stringify({ success: false, error: "AI extraction failed" }),
@@ -382,7 +408,7 @@ Deno.serve(async (req) => {
     }
 
     // Save research result
-    await supabase.from("product_research_results").insert({
+    await adminSupabase.from("product_research_results").insert({
       product_id: product.id,
       research_run_id: queueItem.research_run_id,
       queue_item_id: queueItemId,
@@ -399,7 +425,7 @@ Deno.serve(async (req) => {
     // Apply high-confidence merges to product (fill blanks only)
     if (Object.keys(productUpdates).length > 0) {
       productUpdates.updated_at = new Date().toISOString();
-      await supabase
+      await adminSupabase
         .from("products")
         .update(productUpdates)
         .eq("id", product.id as string);
@@ -407,7 +433,7 @@ Deno.serve(async (req) => {
 
     // Upsert enrichment summary
     const matchConf = (extracted.match_confidence as number) ?? 0;
-    await supabase.from("product_enrichment_summary").upsert(
+    await adminSupabase.from("product_enrichment_summary").upsert(
       {
         product_id: product.id,
         last_researched_at: new Date().toISOString(),
@@ -430,7 +456,7 @@ Deno.serve(async (req) => {
         ? "completed"
         : "completed_partial";
 
-    await supabase
+    await adminSupabase
       .from("product_research_queue")
       .update({ status: finalStatus })
       .eq("id", queueItemId);
