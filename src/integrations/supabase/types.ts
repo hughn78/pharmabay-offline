@@ -241,18 +241,27 @@ export type Database = {
       ebay_categories: {
         Row: {
           category_id: string | null
+          category_level: number | null
           category_name: string | null
           id: string
+          is_leaf: boolean | null
+          parent_category_id: string | null
         }
         Insert: {
           category_id?: string | null
+          category_level?: number | null
           category_name?: string | null
           id?: string
+          is_leaf?: boolean | null
+          parent_category_id?: string | null
         }
         Update: {
           category_id?: string | null
+          category_level?: number | null
           category_name?: string | null
           id?: string
+          is_leaf?: boolean | null
+          parent_category_id?: string | null
         }
         Relationships: []
       }
@@ -2436,6 +2445,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "owner" | "manager" | "lister" | "reviewer"
