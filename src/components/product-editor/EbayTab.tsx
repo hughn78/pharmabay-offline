@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
 import { EbayPublishPanel } from "@/components/ebay/EbayPublishPanel";
+import { EbayCategoryPicker } from "@/components/ebay/EbayCategoryPicker";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
 import { FormField } from "./FormField";
