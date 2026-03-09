@@ -385,12 +385,13 @@ export default function Products() {
 }
 
 function EnrichmentBadge({ status }: { status?: string | null }) {
-  if (!status) return <Badge variant="outline" className="text-[10px]">Pending</Badge>;
-  const map: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-    pending: "outline",
-    in_progress: "secondary",
-    complete: "default",
-    failed: "destructive",
+  if (!status) return <Badge variant="outline" className="text-[10px]">Never Researched</Badge>;
+  const variants: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; label: string }> = {
+    pending: { variant: "outline", label: "Pending" },
+    in_progress: { variant: "secondary", label: "In Progress" },
+    complete: { variant: "default", label: "Enriched" },
+    failed: { variant: "destructive", label: "Failed" },
   };
-  return <Badge variant={map[status] || "outline"} className="text-[10px]">{status}</Badge>;
+  const config = variants[status] || { variant: "outline", label: status };
+  return <Badge variant={config.variant} className="text-[10px]">{config.label}</Badge>;
 }

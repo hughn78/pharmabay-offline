@@ -408,7 +408,7 @@ Deno.serve(async (req) => {
     }
 
     // Save research result
-    await supabase.from("product_research_results").insert({
+    await adminSupabase.from("product_research_results").insert({
       product_id: product.id,
       research_run_id: queueItem.research_run_id,
       queue_item_id: queueItemId,
@@ -425,7 +425,7 @@ Deno.serve(async (req) => {
     // Apply high-confidence merges to product (fill blanks only)
     if (Object.keys(productUpdates).length > 0) {
       productUpdates.updated_at = new Date().toISOString();
-      await supabase
+      await adminSupabase
         .from("products")
         .update(productUpdates)
         .eq("id", product.id as string);
@@ -433,7 +433,7 @@ Deno.serve(async (req) => {
 
     // Upsert enrichment summary
     const matchConf = (extracted.match_confidence as number) ?? 0;
-    await supabase.from("product_enrichment_summary").upsert(
+    await adminSupabase.from("product_enrichment_summary").upsert(
       {
         product_id: product.id,
         last_researched_at: new Date().toISOString(),
@@ -456,7 +456,7 @@ Deno.serve(async (req) => {
         ? "completed"
         : "completed_partial";
 
-    await supabase
+    await adminSupabase
       .from("product_research_queue")
       .update({ status: finalStatus })
       .eq("id", queueItemId);

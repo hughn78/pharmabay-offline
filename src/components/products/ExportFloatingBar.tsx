@@ -27,6 +27,13 @@ export function ExportFloatingBar() {
             </Button>
             <Button
               size="sm"
+              variant="outline"
+              onClick={() => navigate("/market-research")}
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" /> Research
+            </Button>
+            <Button
+              size="sm"
               onClick={() => navigate("/exports/new")}
             >
               Review Export <ArrowRight className="h-3.5 w-3.5 ml-1" />

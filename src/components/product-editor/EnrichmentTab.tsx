@@ -102,6 +102,7 @@ export function EnrichmentTab({ product }: EnrichmentTabProps) {
 
   return (
     <div className="space-y-4">
+      <ResearchHistoryPanel productId={product.id as string} />
       <SourcePagesPanel product={product} />
       <EnrichmentImageUpload productId={product.id as string} />
 

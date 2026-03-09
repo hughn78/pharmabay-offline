@@ -120,12 +120,29 @@ export function EbayTab({ product, draft }: EbayTabProps) {
               </span>
             </div>
             <Input value={form.title} onChange={(e) => handleChange("title", e.target.value)} placeholder="Brand + Product + Strength + Form + Pack Size" />
+            {suggestedTitle && !form.title && (
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">Suggested:</span> {suggestedTitle}
+              </p>
+            )}
           </div>
 
           <FormField label="Subtitle" value={form.subtitle} onChange={(v) => handleChange("subtitle", v)} />
           <FormField label="Category ID" value={form.category_id} onChange={(v) => handleChange("category_id", v)} />
-          <FormField label="ePID" value={form.epid} onChange={(v) => handleChange("epid", v)} />
-          <FormField label="MPN" value={form.mpn} onChange={(v) => handleChange("mpn", v)} />
+          <FormField label="ePID" value={form.epid} onChange={(v) => handleChange("epid", v)}>
+            {suggestedEpid && !form.epid && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="font-medium">Suggested:</span> {suggestedEpid}
+              </p>
+            )}
+          </FormField>
+          <FormField label="MPN" value={form.mpn} onChange={(v) => handleChange("mpn", v)}>
+            {suggestedMpn && !form.mpn && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="font-medium">Suggested:</span> {suggestedMpn}
+              </p>
+            )}
+          </FormField>
           <FormField label="Buy It Now Price" value={form.buy_it_now_price} onChange={(v) => handleChange("buy_it_now_price", v)} type="number" />
 
           <EbayPricingPanel
