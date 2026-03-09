@@ -364,15 +364,17 @@ Deno.serve(async (req) => {
     const extracted = await extractWithAI(product, sources, lovableKey);
 
     if (!extracted) {
-      await supabase
+      await adminSupabase
         .from("product_research_queue")
         .update({ status: "failed", error_message: "AI extraction returned null" })
         .eq("id", queueItemId);
 
-      // Still update run counter
-      await supabase.rpc("increment_run_failed" as never, {
-        run_id: queueItem.research_run_id,
-      }).catch(() => null);
+      // Update run counter
+      await adminSupabase
+        .from("market_research_runs")
+        .update({ failed_count: supabase.raw("failed_count + 1") })
+        .eq("id", queueItem.research_run_id)
+        .catch(() => null);
 
       return new Response(
         JSON.stringify({ success: false, error: "AI extraction failed" }),
