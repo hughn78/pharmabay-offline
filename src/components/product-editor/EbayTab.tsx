@@ -22,6 +22,13 @@ interface EbayTabProps {
 
 export function EbayTab({ product, draft }: EbayTabProps) {
   const queryClient = useQueryClient();
+  
+  // Compute enriched suggestions from product.enrichment_summary
+  const enrichmentSummary = (product.enrichment_summary as Record<string, unknown>) || {};
+  const suggestedTitle = enrichmentSummary.ebay_title_suggestion as string | undefined;
+  const suggestedMpn = enrichmentSummary.mpn as string | undefined;
+  const suggestedEpid = enrichmentSummary.epid as string | undefined;
+
   const [form, setForm] = useState({
     title: draft?.title as string || "",
     subtitle: draft?.subtitle as string || "",
