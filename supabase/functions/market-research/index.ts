@@ -312,7 +312,7 @@ Deno.serve(async (req) => {
     const product = queueItem.product as Record<string, unknown>;
 
     // → searching
-    await supabase
+    await adminSupabase
       .from("product_research_queue")
       .update({ status: "searching", last_attempt_at: new Date().toISOString() })
       .eq("id", queueItemId);
