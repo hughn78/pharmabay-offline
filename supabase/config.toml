@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.fetch-ebay-categories]
 verify_jwt = false
+
+[functions.shopify-storefront-lookup]
+verify_jwt = false
