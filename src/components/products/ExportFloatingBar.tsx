@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { X, ArrowRight } from "lucide-react";
+import { X, ArrowRight, Sparkles } from "lucide-react";
 import { useExportCart } from "@/stores/useExportCart";
 import { motion, AnimatePresence } from "framer-motion";
 
