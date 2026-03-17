@@ -443,14 +443,17 @@ export async function runScrapeJob(
       onProgress({ ...progress });
     }
 
-    progress.extractedProducts = allExtractedProducts;
-    progress.productsExtracted = allExtractedProducts.length;
+    const { clean: sanitizedProducts, skipped: sanitizedSkipped } = sanitizeExtractedProducts(allExtractedProducts);
+    sanitizedSkipped.forEach(s => log('extraction', 'warn', `Filtered: ${s.reason} — "${s.title}"`));
 
-    if (allExtractedProducts.length === 0) {
+    progress.extractedProducts = sanitizedProducts;
+    progress.productsExtracted = sanitizedProducts.length;
+
+    if (sanitizedProducts.length === 0) {
       progress.diagnostics.failureCategory = 'PRODUCT_EXTRACTION_EMPTY';
-      log('extraction', 'warn', 'Product detail URLs were found, but detail extraction returned empty fields');
+      log('extraction', 'warn', `Product detail URLs were found, but extraction returned empty fields (${sanitizedSkipped.length} rows filtered as cart/UI artifacts)`);
     } else {
-      log('extraction', 'info', `Successfully extracted ${allExtractedProducts.length} product(s)`);
+      log('extraction', 'info', `Successfully extracted ${sanitizedProducts.length} product(s) (${sanitizedSkipped.length} filtered)`);
     }
 
     updateStage('complete', 'Complete');
