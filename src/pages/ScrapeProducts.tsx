@@ -103,6 +103,7 @@ const REVIEW_COLUMNS = [
   { key: "pack_size", label: "Pack Size" },
   { key: "strength", label: "Strength" },
   { key: "stock_status", label: "Stock" },
+  { key: "_extractionConfidence", label: "Confidence" },
   { key: "_sourceUrl", label: "Source URL" },
 ];
 
