@@ -369,9 +369,11 @@ export async function runScrapeJob(
 
     // If no product detail URLs found, try using card-level data from listings
     if (acceptedUrls.length === 0 && seedCardProducts.length > 0) {
-      log('qualification', 'info', `No product detail URLs found, using ${seedCardProducts.length} products extracted from listing cards`);
-      progress.extractedProducts = seedCardProducts;
-      progress.productsExtracted = seedCardProducts.length;
+      const { clean, skipped } = sanitizeExtractedProducts(seedCardProducts);
+      skipped.forEach(s => log('qualification', 'warn', `Skipped card: ${s.reason} — "${s.title}"`));
+      log('qualification', 'info', `No product detail URLs found, using ${clean.length} products from listing cards (${skipped.length} filtered)`);
+      progress.extractedProducts = clean;
+      progress.productsExtracted = clean.length;
       progress.diagnostics.extractedProductPageCount = 0;
       updateStage('complete', 'Complete');
       return progress;
