@@ -236,6 +236,7 @@ export default function ScrapeProducts() {
   const [exportScope, setExportScope] = useState<"all" | "selected" | "page">("all");
   const [exportIncludeExcluded, setExportIncludeExcluded] = useState(false);
   const [exportFilename, setExportFilename] = useState("");
+  const [exportColumnPreset, setExportColumnPreset] = useState<"all" | "essentials" | "custom">("all");
 
   const ROWS_PER_PAGE = 50;
 
