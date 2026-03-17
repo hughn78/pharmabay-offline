@@ -477,7 +477,7 @@ export default function ScrapeProducts() {
                     Detecting platform…
                   </Badge>
                 ) : platformResult?.platform === 'shopify' ? (
-                  <Badge variant="outline" className="text-xs gap-1 border-green-500/50 text-green-600">
+                  <Badge variant="outline" className="text-xs gap-1 border-primary/50 text-primary">
                     <CheckCircle2 className="h-3 w-3" />
                     Shopify detected — will use Products API for fast, accurate extraction
                   </Badge>
