@@ -495,7 +495,7 @@ export default function ScrapeProducts() {
               </div>
             )}
 
-
+            <div>
               <Label className="text-sm font-medium mb-2 block">Scrape Mode</Label>
               <div className="grid grid-cols-3 gap-3">
                 {([
