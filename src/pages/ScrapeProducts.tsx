@@ -232,7 +232,10 @@ export default function ScrapeProducts() {
 
   // Export modal
   const [showExport, setShowExport] = useState(false);
-  const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("csv");
+  const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("xlsx");
+  const [exportScope, setExportScope] = useState<"all" | "selected" | "page">("all");
+  const [exportIncludeExcluded, setExportIncludeExcluded] = useState(false);
+  const [exportFilename, setExportFilename] = useState("");
 
   const ROWS_PER_PAGE = 50;
 
