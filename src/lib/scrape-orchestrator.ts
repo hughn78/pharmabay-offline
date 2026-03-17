@@ -5,6 +5,7 @@
 
 import { firecrawlApi } from '@/lib/api/firecrawl';
 import { detectPageType, extractCandidateUrls, isLikelyProductUrl } from '@/lib/utils/pageTypeDetector';
+import { sanitizeExtractedProducts } from '@/lib/utils/extractionSanitizer';
 import {
   type ScrapeJobConfig,
   type ScrapeProgress,
@@ -226,16 +227,19 @@ export async function runScrapeJob(
     // =============================================
     if (config.scrapeMode === 'single') {
       updateStage('extraction', 'Extracting product data from single page…');
-      const products = extractProductsFromContent(seedData.markdown || seedMarkdown, seedHtml, config.targetSiteUrl);
-      progress.extractedProducts = products;
-      progress.productsExtracted = products.length;
+      const rawProducts = extractProductsFromContent(seedData.markdown || seedMarkdown, seedHtml, config.targetSiteUrl);
+      const { clean, skipped } = sanitizeExtractedProducts(rawProducts);
+      progress.extractedProducts = clean;
+      progress.productsExtracted = clean.length;
       progress.diagnostics.extractedProductPageCount = 1;
 
-      if (products.length === 0) {
+      skipped.forEach(s => log('extraction', 'warn', `Skipped: ${s.reason} — "${s.title}"`));
+
+      if (clean.length === 0) {
         progress.diagnostics.failureCategory = 'PRODUCT_EXTRACTION_EMPTY';
-        log('extraction', 'warn', 'No products could be extracted from this page');
+        log('extraction', 'warn', `No products could be extracted from this page (${skipped.length} rows filtered as cart/UI artifacts)`);
       } else {
-        log('extraction', 'info', `Extracted ${products.length} product(s) from single page`);
+        log('extraction', 'info', `Extracted ${clean.length} product(s) from single page (${skipped.length} filtered)`);
       }
 
       updateStage('complete', 'Complete');
@@ -365,9 +369,11 @@ export async function runScrapeJob(
 
     // If no product detail URLs found, try using card-level data from listings
     if (acceptedUrls.length === 0 && seedCardProducts.length > 0) {
-      log('qualification', 'info', `No product detail URLs found, using ${seedCardProducts.length} products extracted from listing cards`);
-      progress.extractedProducts = seedCardProducts;
-      progress.productsExtracted = seedCardProducts.length;
+      const { clean, skipped } = sanitizeExtractedProducts(seedCardProducts);
+      skipped.forEach(s => log('qualification', 'warn', `Skipped card: ${s.reason} — "${s.title}"`));
+      log('qualification', 'info', `No product detail URLs found, using ${clean.length} products from listing cards (${skipped.length} filtered)`);
+      progress.extractedProducts = clean;
+      progress.productsExtracted = clean.length;
       progress.diagnostics.extractedProductPageCount = 0;
       updateStage('complete', 'Complete');
       return progress;
@@ -437,14 +443,17 @@ export async function runScrapeJob(
       onProgress({ ...progress });
     }
 
-    progress.extractedProducts = allExtractedProducts;
-    progress.productsExtracted = allExtractedProducts.length;
+    const { clean: sanitizedProducts, skipped: sanitizedSkipped } = sanitizeExtractedProducts(allExtractedProducts);
+    sanitizedSkipped.forEach(s => log('extraction', 'warn', `Filtered: ${s.reason} — "${s.title}"`));
 
-    if (allExtractedProducts.length === 0) {
+    progress.extractedProducts = sanitizedProducts;
+    progress.productsExtracted = sanitizedProducts.length;
+
+    if (sanitizedProducts.length === 0) {
       progress.diagnostics.failureCategory = 'PRODUCT_EXTRACTION_EMPTY';
-      log('extraction', 'warn', 'Product detail URLs were found, but detail extraction returned empty fields');
+      log('extraction', 'warn', `Product detail URLs were found, but extraction returned empty fields (${sanitizedSkipped.length} rows filtered as cart/UI artifacts)`);
     } else {
-      log('extraction', 'info', `Successfully extracted ${allExtractedProducts.length} product(s)`);
+      log('extraction', 'info', `Successfully extracted ${sanitizedProducts.length} product(s) (${sanitizedSkipped.length} filtered)`);
     }
 
     updateStage('complete', 'Complete');
@@ -662,14 +671,30 @@ function extractFromPatterns(markdown: string, sourceUrl: string): ExtractedProd
 
 function extractProductCardsFromListing(markdown: string, sourceUrl: string): ExtractedProduct[] {
   const products: ExtractedProduct[] = [];
-  // Look for repeated product-card-like patterns: linked titles with prices
-  const cardRegex = /\[([^\]]{3,80})\]\(([^)]+)\)[^\n]*?\$\s?([\d,]+\.?\d{0,2})/g;
+  const seenTitles = new Set<string>();
+
+  // Cart/UI phrases to skip
+  const skipPhrases = [
+    'your cart', 'add to cart', 'view cart', 'cart total', 'in cart',
+    'checkout', 'shopping cart', 'empty cart', 'skip to', 'close',
+    'menu', 'navigation', 'search', 'login', 'sign in', 'newsletter',
+    'free shipping', 'subscribe', 'view and order',
+  ];
+
+  const isSkippable = (text: string) => {
+    const lower = text.toLowerCase();
+    return skipPhrases.some(p => lower.includes(p));
+  };
+
+  // Pattern 1: Markdown links with prices nearby — [Title](url) ... $XX.XX
+  const cardRegex = /\[([^\]]{3,100})\]\(([^)]+)\)[^\n]*?\$\s?([\d,]+\.?\d{0,2})/g;
   let match;
   while ((match = cardRegex.exec(markdown)) !== null) {
     const title = match[1].replace(/[*_`]/g, '').trim();
     const url = match[2];
     const price = parseFloat(match[3].replace(',', ''));
-    if (title && price) {
+    if (title && price > 0 && !isSkippable(title) && !seenTitles.has(title.toLowerCase())) {
+      seenTitles.add(title.toLowerCase());
       products.push(createExtractedProduct({
         source_product_name: title,
         sell_price: price,
@@ -680,30 +705,35 @@ function extractProductCardsFromListing(markdown: string, sourceUrl: string): Ex
     }
   }
 
-  // Also try: heading + price pattern for cards without links
+  // Pattern 2: Look for repeated blocks of title lines near prices
+  // Shopify collections often render as: Title\nRegular price\n$XX.XX
   const lines = markdown.split('\n');
-  let i = 0;
-  while (i < lines.length) {
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    // Look for non-heading title lines followed by prices
-    if (line.length > 5 && line.length < 100 && !line.startsWith('#') && !line.startsWith('|') && !line.startsWith('-') && !line.startsWith('[')) {
-      const nextLines = lines.slice(i + 1, i + 4).join(' ');
-      const priceMatch = nextLines.match(/\$\s?([\d,]+\.?\d{0,2})/);
-      if (priceMatch) {
-        const existing = products.find(p => p.source_product_name === line);
-        if (!existing) {
-          products.push(createExtractedProduct({
-            source_product_name: line,
-            sell_price: parseFloat(priceMatch[1].replace(',', '')),
-            _extractionNotes: ['Listing card (title+price proximity)'],
-            _extractionConfidence: 0.3,
-          }, sourceUrl));
-        }
-        i += 3;
-        continue;
+
+    // Skip obvious non-product lines
+    if (!line || line.length < 5 || line.length > 120) continue;
+    if (line.startsWith('#') || line.startsWith('|') || line.startsWith('-') || line.startsWith('[') || line.startsWith('!')) continue;
+    if (isSkippable(line)) continue;
+    // Skip lines that look like labels/UI
+    if (/^(regular price|sale price|from|sold out|quick view|compare|filter|sort)/i.test(line)) continue;
+
+    // Check if next few lines contain a price
+    const nextChunk = lines.slice(i + 1, i + 5).join(' ');
+    const priceMatch = nextChunk.match(/\$\s?([\d,]+\.?\d{0,2})/);
+    if (priceMatch) {
+      const price = parseFloat(priceMatch[1].replace(',', ''));
+      if (price > 0 && !seenTitles.has(line.toLowerCase())) {
+        seenTitles.add(line.toLowerCase());
+        products.push(createExtractedProduct({
+          source_product_name: line,
+          sell_price: price,
+          _extractionNotes: ['Listing card (title+price proximity)'],
+          _extractionConfidence: 0.3,
+        }, sourceUrl));
+        i += 3; // Skip past the price lines
       }
     }
-    i++;
   }
 
   return products;
