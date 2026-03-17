@@ -6,6 +6,8 @@
 import { firecrawlApi } from '@/lib/api/firecrawl';
 import { detectPageType, extractCandidateUrls, isLikelyProductUrl } from '@/lib/utils/pageTypeDetector';
 import { sanitizeExtractedProducts } from '@/lib/utils/extractionSanitizer';
+import { fetchShopifyProducts } from '@/lib/api/shopifyFetcher';
+import { detectPlatform, type Platform } from '@/lib/utils/platformDetector';
 import {
   type ScrapeJobConfig,
   type ScrapeProgress,
