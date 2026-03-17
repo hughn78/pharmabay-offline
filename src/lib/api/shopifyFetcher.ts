@@ -1,6 +1,7 @@
 /**
  * Fetches products from Shopify stores via the public unauthenticated JSON API.
  * No API key needed — this is a public Shopify storefront endpoint.
+ * Uses the fetch-proxy edge function to avoid CORS and get raw JSON.
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -65,7 +66,7 @@ function stripHtml(html: string): string {
 export function parseShopifyCollectionUrl(url: string): { origin: string; collectionHandle: string | null } {
   const parsed = new URL(url);
   const origin = parsed.origin;
-  const pathMatch = parsed.pathname.match(/\/collections\/([^/]+)/);
+  const pathMatch = parsed.pathname.match(/\/collections\/([^/?#]+)/);
   return {
     origin,
     collectionHandle: pathMatch ? pathMatch[1] : null,
@@ -73,8 +74,29 @@ export function parseShopifyCollectionUrl(url: string): { origin: string; collec
 }
 
 /**
- * Fetch products from a Shopify collection or entire store via the edge function proxy.
- * Uses the public /products.json endpoint which requires no authentication.
+ * Fetch raw JSON from a URL via our proxy edge function.
+ */
+async function fetchJson(url: string): Promise<{ success: boolean; data?: any; error?: string; httpStatus?: number }> {
+  const { data, error } = await supabase.functions.invoke('fetch-proxy', {
+    body: { url },
+  });
+
+  if (error) return { success: false, error: error.message };
+  if (!data?.success) return { success: false, error: data?.error || 'Fetch failed', httpStatus: data?.http_status };
+  if (data.content_type !== 'json') return { success: false, error: 'Response was not JSON' };
+  return { success: true, data: data.data };
+}
+
+/**
+ * Detect if a URL is a Shopify store by probing /products.json.
+ */
+export async function probeShopifyApi(origin: string): Promise<boolean> {
+  const result = await fetchJson(`${origin}/products.json?limit=1`);
+  return result.success && Array.isArray(result.data?.products);
+}
+
+/**
+ * Fetch products from a Shopify collection or entire store.
  */
 export async function fetchShopifyProducts(
   url: string,
@@ -92,68 +114,33 @@ export async function fetchShopifyProducts(
       ? `${origin}/collections/${collectionHandle}/products.json?limit=250&page=${page}`
       : `${origin}/products.json?limit=250&page=${page}`;
 
-    try {
-      // Use our edge function to proxy the request (avoids CORS)
-      const { data, error } = await supabase.functions.invoke('firecrawl-scrape', {
-        body: {
-          url: apiUrl,
-          options: {
-            formats: ['markdown'],
-            onlyMainContent: false,
-          },
-        },
-      });
+    const result = await fetchJson(apiUrl);
 
-      if (error) {
-        return { products: allProducts, totalFetched: allProducts.length, error: error.message };
+    if (!result.success) {
+      if (allProducts.length > 0) {
+        // We got some products, stop pagination gracefully
+        break;
+      }
+      return { products: [], totalFetched: 0, error: result.error };
+    }
+
+    const shopifyProducts: ShopifyProduct[] = result.data?.products || [];
+
+    if (shopifyProducts.length === 0) {
+      hasMore = false;
+    } else {
+      for (const product of shopifyProducts) {
+        const mapped = mapShopifyProduct(product, origin);
+        allProducts.push(...mapped);
       }
 
-      // The edge function returns Firecrawl data, but we actually want to parse the raw JSON
-      // Since Firecrawl renders it as markdown, we need a different approach.
-      // Let's call the URL directly via a simpler edge function approach.
-      // Actually, let's parse the markdown content which will contain the JSON data
-      const markdown = data?.data?.markdown || data?.markdown || '';
-      
-      // Try to extract JSON from the markdown content
-      let shopifyProducts: ShopifyProduct[] = [];
-      
-      // Firecrawl returns the JSON as markdown text — try to parse it
-      try {
-        // The markdown might wrap the JSON in code blocks or just return it raw
-        const jsonStr = markdown.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        const parsed = JSON.parse(jsonStr);
-        shopifyProducts = parsed.products || [];
-      } catch {
-        // Try extracting from rawHtml if available 
-        const rawContent = data?.data?.rawHtml || data?.rawHtml || '';
-        try {
-          const parsed = JSON.parse(rawContent);
-          shopifyProducts = parsed.products || [];
-        } catch {
-          // Couldn't parse — Firecrawl might have rendered the JSON as HTML
-          // Try a direct fetch via a dedicated edge function
-          break;
-        }
-      }
+      onProgress?.({ page, totalFetched: allProducts.length, hasMore: shopifyProducts.length >= 250 });
 
-      if (shopifyProducts.length === 0) {
+      if (shopifyProducts.length < 250) {
         hasMore = false;
       } else {
-        for (const product of shopifyProducts) {
-          const mapped = mapShopifyProduct(product, origin);
-          allProducts.push(...mapped);
-        }
-        
-        onProgress?.({ page, totalFetched: allProducts.length, hasMore: shopifyProducts.length >= 250 });
-        
-        if (shopifyProducts.length < 250) {
-          hasMore = false;
-        } else {
-          page++;
-        }
+        page++;
       }
-    } catch (err: any) {
-      return { products: allProducts, totalFetched: allProducts.length, error: err.message };
     }
   }
 
@@ -162,17 +149,14 @@ export async function fetchShopifyProducts(
 
 /**
  * Map a Shopify product to our canonical ExtractedProduct format.
- * Creates one row per variant if multiple variants exist with meaningful differences.
  */
 function mapShopifyProduct(product: ShopifyProduct, storeOrigin: string): ExtractedProduct[] {
   const sourceUrl = `${storeOrigin}/products/${product.handle}`;
   const primaryImage = product.images?.[0]?.src || '';
   const additionalImages = product.images?.slice(1).map(img => img.src) || [];
 
-  // For single-variant products (Default Title), create one row
-  // For multi-variant, create one row per variant
   const variants = product.variants || [];
-  const isSingleVariant = variants.length <= 1 || 
+  const isSingleVariant = variants.length <= 1 ||
     (variants.length === 1 && variants[0].title === 'Default Title');
 
   if (isSingleVariant) {
@@ -200,7 +184,6 @@ function mapShopifyProduct(product: ShopifyProduct, storeOrigin: string): Extrac
     }, sourceUrl)];
   }
 
-  // Multi-variant: one row per variant
   return variants.map(v => {
     const variantTitle = v.title !== 'Default Title' ? ` — ${v.title}` : '';
     const brand = product.vendor || inferBrandFromTitle(product.title) || '';
