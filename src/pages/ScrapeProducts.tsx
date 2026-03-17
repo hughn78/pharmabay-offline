@@ -954,7 +954,7 @@ export default function ScrapeProducts() {
           </Button>
         </div>
 
-        <ScrapeExportModal open={showExport} onOpenChange={setShowExport} format={exportFormat} setFormat={setExportFormat} scope={exportScope} setScope={setExportScope} includeExcluded={exportIncludeExcluded} setIncludeExcluded={setExportIncludeExcluded} filename={exportFilename} setFilename={setExportFilename} onExport={handleExport} totalCount={products.filter(p => !p._excluded).length} selectedCount={selectedProducts.length} pageCount={paginatedProducts.length} />
+        <ScrapeExportModal open={showExport} onOpenChange={setShowExport} format={exportFormat} setFormat={setExportFormat} scope={exportScope} setScope={setExportScope} includeExcluded={exportIncludeExcluded} setIncludeExcluded={setExportIncludeExcluded} filename={exportFilename} setFilename={setExportFilename} onExport={handleExport} totalCount={products.filter(p => !p._excluded).length} selectedCount={selectedProducts.length} pageCount={paginatedProducts.length} columnPreset={exportColumnPreset} setColumnPreset={setExportColumnPreset} />
       </div>
     );
   }
