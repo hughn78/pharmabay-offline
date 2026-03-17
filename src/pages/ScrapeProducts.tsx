@@ -64,7 +64,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { bulkProductUpsert, type BulkUpsertMode } from "@/lib/api/bulk-upsert";
-import { triggerExport } from "@/lib/export-utils";
+
 import { buildJobConfig, runScrapeJob } from "@/lib/scrape-orchestrator";
 import { detectPlatform, type Platform, type PlatformDetectionResult } from "@/lib/utils/platformDetector";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
