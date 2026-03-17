@@ -1217,6 +1217,105 @@ export default function ScrapeProducts() {
   );
 }
 
+// ============================================================
+// FULL EXPORT COLUMN DEFINITIONS
+// ============================================================
+
+type ColFormat = "text" | "price" | "decimal" | "bool" | "tags" | "pipe" | "date" | "int";
+
+interface ExportCol {
+  key: string;
+  label: string;
+  format: ColFormat;
+  getter?: (row: ExtractedProduct) => any;
+  group: "essential" | "detail";
+}
+
+const ALL_EXPORT_COLUMNS: ExportCol[] = [
+  { key: "source_product_name", label: "title", format: "text", group: "essential" },
+  { key: "brand", label: "brand", format: "text", group: "essential" },
+  { key: "sell_price", label: "price", format: "price", group: "essential" },
+  { key: "compare_at_price", label: "compare_at_price", format: "price", group: "detail" },
+  { key: "currency", label: "currency", format: "text", getter: () => "AUD", group: "detail" },
+  { key: "sku", label: "sku", format: "text", group: "essential" },
+  { key: "barcode", label: "barcode", format: "text", group: "detail" },
+  { key: "product_type", label: "product_type", format: "text", group: "detail" },
+  { key: "category", label: "category", format: "text", group: "detail" },
+  { key: "tags", label: "tags", format: "tags", group: "detail" },
+  { key: "pack_size", label: "pack_size", format: "text", group: "detail" },
+  { key: "strength", label: "strength", format: "text", group: "detail" },
+  { key: "weight_grams", label: "weight", format: "decimal", group: "detail" },
+  { key: "weight_unit", label: "weight_unit", format: "text", getter: (r) => r.weight_grams ? "g" : "", group: "detail" },
+  { key: "dimensions", label: "dimensions", format: "text", group: "detail" },
+  { key: "short_description", label: "short_description", format: "text", group: "detail" },
+  { key: "full_description_html", label: "full_description_html", format: "text", group: "detail" },
+  { key: "plain_description", label: "plain_description", format: "text", getter: (r) => r.full_description_html ? r.full_description_html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "", group: "detail" },
+  { key: "ingredients_summary", label: "ingredients", format: "text", group: "detail" },
+  { key: "product_form", label: "dosage_form", format: "text", group: "detail" },
+  { key: "indications", label: "indications", format: "text", group: "detail" },
+  { key: "directions_summary", label: "directions", format: "text", group: "detail" },
+  { key: "warnings_summary", label: "contraindications", format: "text", group: "detail" },
+  { key: "storage_requirements", label: "storage_conditions", format: "text", group: "detail" },
+  { key: "shelf_life_notes", label: "shelf_life", format: "text", group: "detail" },
+  { key: "pregnancy_category", label: "pregnancy_category", format: "text", group: "detail" },
+  { key: "cold_chain_required", label: "cold_chain_required", format: "bool", group: "detail" },
+  { key: "stock_status", label: "stock_status", format: "text", group: "essential" },
+  { key: "quantity_available", label: "quantity_available", format: "int", group: "detail" },
+  { key: "primary_image_url", label: "primary_image_url", format: "text", group: "essential" },
+  { key: "additional_image_urls", label: "additional_image_urls", format: "pipe", group: "detail" },
+  { key: "_image_count", label: "image_count", format: "int", getter: (r) => {
+    let c = r.primary_image_url ? 1 : 0;
+    if (Array.isArray(r.additional_image_urls)) c += r.additional_image_urls.length;
+    return c || "";
+  }, group: "detail" },
+  { key: "_all_images", label: "all_image_urls", format: "text", getter: (r) => {
+    const imgs: string[] = [];
+    if (r.primary_image_url) imgs.push(r.primary_image_url);
+    if (Array.isArray(r.additional_image_urls)) imgs.push(...r.additional_image_urls);
+    return imgs.join("|");
+  }, group: "detail" },
+  { key: "_sourceUrl", label: "source_url", format: "text", group: "essential" },
+  { key: "_sourceSite", label: "source_site", format: "text", getter: (r) => { try { return new URL(r._sourceUrl).hostname; } catch { return ""; } }, group: "detail" },
+  { key: "_sourceCollectionUrl", label: "source_collection_url", format: "text", getter: (r) => (r as any).source_collection_url ?? "", group: "detail" },
+  { key: "variant_sku", label: "sku_variant", format: "text", group: "detail" },
+  { key: "variant_title", label: "variant_title", format: "text", group: "detail" },
+  { key: "option1_name", label: "option1_name", format: "text", group: "detail" },
+  { key: "option1_value", label: "option1_value", format: "text", group: "detail" },
+  { key: "option2_name", label: "option2_name", format: "text", group: "detail" },
+  { key: "option2_value", label: "option2_value", format: "text", group: "detail" },
+  { key: "option3_name", label: "option3_name", format: "text", group: "detail" },
+  { key: "option3_value", label: "option3_value", format: "text", group: "detail" },
+  { key: "requires_prescription", label: "requires_prescription", format: "bool", group: "detail" },
+  { key: "tga_aust_number", label: "tga_number", format: "text", group: "detail" },
+  { key: "pbs_listed", label: "pbs_listed", format: "bool", group: "detail" },
+  { key: "scheduled_status", label: "scheduled_status", format: "text", group: "detail" },
+  { key: "condition", label: "condition", format: "text", group: "detail" },
+  { key: "mpn", label: "mpn", format: "text", group: "detail" },
+  { key: "country_of_origin", label: "country_of_origin", format: "text", group: "detail" },
+  { key: "shipping_notes", label: "shipping_notes", format: "text", group: "detail" },
+  { key: "return_notes", label: "return_notes", format: "text", group: "detail" },
+  { key: "_extractionConfidence", label: "extraction_confidence_score", format: "decimal", group: "essential" },
+  { key: "_extractionNotes", label: "extraction_notes", format: "text", getter: (r) => Array.isArray(r._extractionNotes) ? r._extractionNotes.join(", ") : (r._extractionNotes ?? ""), group: "detail" },
+  { key: "scraped_at", label: "scraped_at", format: "date", group: "detail" },
+  { key: "user_edited", label: "user_edited", format: "bool", group: "detail" },
+  { key: "_export_status", label: "export_status", format: "text", getter: (r) => r._excluded ? "exclude" : "include", group: "detail" },
+  { key: "validation_errors", label: "validation_errors", format: "text", getter: (r) => {
+    const notes = r._extractionNotes;
+    if (Array.isArray(notes) && notes.length) return notes.filter(n => n.toLowerCase().includes("error") || n.toLowerCase().includes("missing")).join(", ");
+    if (r._status === "error") return "Missing required fields";
+    return "";
+  }, group: "detail" },
+];
+
+function getExportColumns(preset: "all" | "essentials" | "custom"): ExportCol[] {
+  if (preset === "essentials") return ALL_EXPORT_COLUMNS.filter(c => c.group === "essential");
+  return ALL_EXPORT_COLUMNS;
+}
+
+// ============================================================
+// EXPORT MODAL COMPONENT
+// ============================================================
+
 function ScrapeExportModal({
   open,
   onOpenChange,
@@ -1232,6 +1331,8 @@ function ScrapeExportModal({
   totalCount,
   selectedCount,
   pageCount,
+  columnPreset,
+  setColumnPreset,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -1247,14 +1348,17 @@ function ScrapeExportModal({
   totalCount: number;
   selectedCount: number;
   pageCount: number;
+  columnPreset: "all" | "essentials" | "custom";
+  setColumnPreset: (v: "all" | "essentials" | "custom") => void;
 }) {
   const countLabel = scope === "all" ? totalCount : scope === "selected" ? selectedCount : pageCount;
+  const colCount = getExportColumns(columnPreset).length;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Export Scraped Products</DialogTitle>
-          <DialogDescription>Choose scope, format, and download.</DialogDescription>
+          <DialogDescription>Choose scope, columns, format, and download.</DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-5">
           {/* Scope */}
@@ -1267,14 +1371,26 @@ function ScrapeExportModal({
                 { value: "page" as const, label: `Current page only (${pageCount})` },
               ]).map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2 cursor-pointer text-sm">
-                  <input
-                    type="radio"
-                    name="export-scope"
-                    checked={scope === opt.value}
-                    onChange={() => setScope(opt.value)}
-                    className="accent-[hsl(var(--primary))]"
-                  />
+                  <input type="radio" name="export-scope" checked={scope === opt.value} onChange={() => setScope(opt.value)} className="accent-[hsl(var(--primary))]" />
                   {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+          {/* Columns */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Columns</Label>
+            <div className="space-y-1.5">
+              {([
+                { value: "all" as const, label: `All fields (${ALL_EXPORT_COLUMNS.length} columns)`, desc: "Every scraped field including images, variants, regulatory" },
+                { value: "essentials" as const, label: "Essentials only (7 columns)", desc: "Title, Brand, Price, SKU, Stock, Primary Image, Source URL" },
+              ]).map((opt) => (
+                <label key={opt.value} className="flex items-start gap-2 cursor-pointer text-sm">
+                  <input type="radio" name="export-cols" checked={columnPreset === opt.value} onChange={() => setColumnPreset(opt.value)} className="accent-[hsl(var(--primary))] mt-0.5" />
+                  <span>
+                    <span className="font-medium">{opt.label}</span>
+                    <span className="block text-xs text-muted-foreground">{opt.desc}</span>
+                  </span>
                 </label>
               ))}
             </div>
@@ -1288,13 +1404,7 @@ function ScrapeExportModal({
                 { value: "csv" as const, label: "CSV (.csv)" },
               ]).map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2 cursor-pointer text-sm">
-                  <input
-                    type="radio"
-                    name="export-format"
-                    checked={format === opt.value}
-                    onChange={() => setFormat(opt.value)}
-                    className="accent-[hsl(var(--primary))]"
-                  />
+                  <input type="radio" name="export-format" checked={format === opt.value} onChange={() => setFormat(opt.value)} className="accent-[hsl(var(--primary))]" />
                   {opt.label}
                 </label>
               ))}
@@ -1302,14 +1412,8 @@ function ScrapeExportModal({
           </div>
           {/* Include excluded */}
           <div className="flex items-center gap-2">
-            <Checkbox
-              id="include-excluded"
-              checked={includeExcluded}
-              onCheckedChange={(v) => setIncludeExcluded(!!v)}
-            />
-            <Label htmlFor="include-excluded" className="text-sm cursor-pointer">
-              Include rows marked as Excluded
-            </Label>
+            <Checkbox id="include-excluded" checked={includeExcluded} onCheckedChange={(v) => setIncludeExcluded(!!v)} />
+            <Label htmlFor="include-excluded" className="text-sm cursor-pointer">Include rows marked as Excluded</Label>
           </div>
           {/* Filename */}
           <div className="space-y-1">
@@ -1321,7 +1425,7 @@ function ScrapeExportModal({
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={onExport}>
             <Download className="mr-2 h-4 w-4" />
-            Export {countLabel} products
+            Export {countLabel} products ({colCount} cols)
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1341,7 +1445,7 @@ function exportScrapeCSV(data: Record<string, any>[], filename: string) {
 
 function exportScrapeXLSX(
   data: Record<string, any>[],
-  cols: { key: string; label: string }[],
+  cols: ExportCol[],
   sourceRows: ExtractedProduct[],
   filename: string,
 ) {
@@ -1358,6 +1462,23 @@ function exportScrapeXLSX(
     // Freeze header
     ws["!freeze"] = { xSplit: 0, ySplit: 1 };
 
+    // Index lookups
+    const priceIdx = new Set<number>();
+    const boolIdx = new Set<number>();
+    const urlIdx = new Set<number>();
+    const descIdx = new Set<number>();
+    const confIdx = headers.indexOf("extraction_confidence_score");
+    const stockIdx = headers.indexOf("stock_status");
+    const valErrIdx = headers.indexOf("validation_errors");
+    const weightIdx = headers.indexOf("weight");
+
+    cols.forEach((c, i) => {
+      if (c.format === "price") priceIdx.add(i);
+      if (c.format === "bool") boolIdx.add(i);
+      if (c.label.includes("url") || c.label.includes("image")) urlIdx.add(i);
+      if (c.label.includes("description") || c.label === "ingredients" || c.label === "directions" || c.label === "contraindications") descIdx.add(i);
+    });
+
     // Style header row
     for (let c = 0; c < headers.length; c++) {
       const addr = XLSX.utils.encode_cell({ r: 0, c });
@@ -1369,30 +1490,41 @@ function exportScrapeXLSX(
     }
 
     // Style data rows
-    const priceColIdx = headers.indexOf("Price");
-    const compPriceColIdx = headers.indexOf("Compare At Price");
-    const stockColIdx = headers.indexOf("Stock");
-    const confColIdx = headers.indexOf("Confidence");
-
     for (let r = 1; r <= rows.length; r++) {
       const srcRow = sourceRows[r - 1];
       const isOutOfStock = srcRow?.stock_status === "out_of_stock";
-      const isLowConf = srcRow?._extractionConfidence != null && Number(srcRow._extractionConfidence) < 0.5;
+      const isLowConf = confIdx >= 0 && srcRow?._extractionConfidence != null && Number(srcRow._extractionConfidence) < 0.7;
+      const hasValErrors = valErrIdx >= 0 && data[r - 1]?.[headers[valErrIdx]];
 
       for (let c = 0; c < headers.length; c++) {
         const addr = XLSX.utils.encode_cell({ r, c });
         if (!ws[addr]) continue;
 
-        // Price format
-        if (c === priceColIdx || c === compPriceColIdx) {
-          if (typeof ws[addr].v === "number") {
-            ws[addr].z = "$#,##0.00";
-          }
+        // Number formats
+        if (priceIdx.has(c) && typeof ws[addr].v === "number") ws[addr].z = "$#,##0.00";
+        if (c === weightIdx && typeof ws[addr].v === "number") ws[addr].z = "0.00";
+        if (c === confIdx && typeof ws[addr].v === "number") ws[addr].z = "0.00";
+
+        // Bool alignment
+        if (boolIdx.has(c)) ws[addr].s = { ...(ws[addr].s || {}), alignment: { horizontal: "center" } };
+
+        // URL styling (blue)
+        if (urlIdx.has(c) && typeof ws[addr].v === "string" && ws[addr].v.startsWith("http")) {
+          ws[addr].l = { Target: ws[addr].v, Tooltip: ws[addr].v };
+          ws[addr].s = { ...(ws[addr].s || {}), font: { color: { rgb: "0563C1" }, underline: true } };
         }
 
-        // Conditional fill
+        // Description text wrapping
+        if (descIdx.has(c)) {
+          ws[addr].s = { ...(ws[addr].s || {}), alignment: { wrapText: true, vertical: "top" }, font: { ...(ws[addr].s?.font || {}), sz: 10 } };
+        }
+
+        // Conditional fills (priority: out_of_stock > validation errors > low confidence)
         if (isOutOfStock) {
           ws[addr].s = { ...(ws[addr].s || {}), fill: { fgColor: { rgb: "FFE4E4" } } };
+        } else if (hasValErrors) {
+          ws[addr].s = { ...(ws[addr].s || {}), fill: { fgColor: { rgb: "FFF0E4" } } };
+          if (c === valErrIdx) ws[addr].s = { ...(ws[addr].s || {}), font: { ...(ws[addr].s?.font || {}), color: { rgb: "C00000" } } };
         } else if (isLowConf) {
           ws[addr].s = { ...(ws[addr].s || {}), fill: { fgColor: { rgb: "FFFDE4" } } };
         }
@@ -1401,6 +1533,65 @@ function exportScrapeXLSX(
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "PharmaBay Products");
+
+    // Summary sheet
+    const brandCounts: Record<string, number> = {};
+    const typeCounts: Record<string, number> = {};
+    const stockCounts: Record<string, number> = {};
+    let highConf = 0, medConf = 0, lowConf = 0;
+    for (const row of sourceRows) {
+      const b = row.brand || "Unknown";
+      brandCounts[b] = (brandCounts[b] || 0) + 1;
+      const t = row.product_type || "Unknown";
+      typeCounts[t] = (typeCounts[t] || 0) + 1;
+      const s = row.stock_status || "unknown";
+      stockCounts[s] = (stockCounts[s] || 0) + 1;
+      const conf = Number(row._extractionConfidence || 0);
+      if (conf >= 0.7) highConf++;
+      else if (conf >= 0.4) medConf++;
+      else lowConf++;
+    }
+
+    const summaryData: (string | number)[][] = [
+      ["PharmaBay Export Summary", ""],
+      ["Total Products", sourceRows.length],
+      ["High Confidence (≥0.7)", highConf],
+      ["Medium Confidence", medConf],
+      ["Low Confidence (<0.4)", lowConf],
+      ["", ""],
+      ["Brand", "Count"],
+      ...Object.entries(brandCounts).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v]),
+      ["", ""],
+      ["Stock Status", "Count"],
+      ...Object.entries(stockCounts).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v]),
+      ["", ""],
+      ["Product Type", "Count"],
+      ...Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v]),
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
+    ws2["!cols"] = [{ wch: 30 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws2, "Summary");
+
+    // Image Audit sheet
+    const imageRows: (string | number)[][] = [["Product Title", "Image URL", "Image Position"]];
+    for (const row of sourceRows) {
+      if (row.primary_image_url) imageRows.push([row.source_product_name, row.primary_image_url, "Primary"]);
+      if (Array.isArray(row.additional_image_urls)) {
+        row.additional_image_urls.forEach((u, i) => imageRows.push([row.source_product_name, u, `Additional ${i + 1}`]));
+      }
+    }
+    const ws3 = XLSX.utils.aoa_to_sheet(imageRows);
+    ws3["!cols"] = [{ wch: 40 }, { wch: 60 }, { wch: 16 }];
+    // Make image URLs clickable
+    for (let r = 1; r < imageRows.length; r++) {
+      const addr = XLSX.utils.encode_cell({ r, c: 1 });
+      if (ws3[addr] && typeof ws3[addr].v === "string" && ws3[addr].v.startsWith("http")) {
+        ws3[addr].l = { Target: ws3[addr].v, Tooltip: ws3[addr].v };
+        ws3[addr].s = { font: { color: { rgb: "0563C1" }, underline: true } };
+      }
+    }
+    XLSX.utils.book_append_sheet(wb, ws3, "Image Audit");
+
     XLSX.writeFile(wb, `${filename}.xlsx`);
   });
 }
