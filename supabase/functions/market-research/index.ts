@@ -271,9 +271,8 @@ Deno.serve(async (req) => {
     { global: { headers: { Authorization: authHeader } } },
   );
 
-  const token = authHeader.replace("Bearer ", "");
-  const { error: authError } = await supabase.auth.getClaims(token);
-  if (authError) {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -369,12 +368,20 @@ Deno.serve(async (req) => {
         .update({ status: "failed", error_message: "AI extraction returned null" })
         .eq("id", queueItemId);
 
-      // Update run counter
-      await adminSupabase
-        .from("market_research_runs")
-        .update({ failed_count: supabase.raw("failed_count + 1") })
-        .eq("id", queueItem.research_run_id)
-        .catch(() => null);
+      // Update run counter via RPC-style increment
+      if (queueItem.research_run_id) {
+        const { data: run } = await adminSupabase
+          .from("market_research_runs")
+          .select("failed_count")
+          .eq("id", queueItem.research_run_id)
+          .single();
+        if (run) {
+          await adminSupabase
+            .from("market_research_runs")
+            .update({ failed_count: (run.failed_count ?? 0) + 1 })
+            .eq("id", queueItem.research_run_id);
+        }
+      }
 
       return new Response(
         JSON.stringify({ success: false, error: "AI extraction failed" }),

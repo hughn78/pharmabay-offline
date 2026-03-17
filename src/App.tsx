@@ -22,6 +22,7 @@ import ChannelListingImports from "./pages/ChannelListingImports";
 import EbayCallback from "./pages/EbayCallback";
 import MarketResearch from "./pages/MarketResearch";
 import Auth from "./pages/Auth";
+import Exports from "./pages/Exports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,7 +41,7 @@ const App = () => (
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductEditor />} />
               <Route path="/review" element={<ReviewQueue />} />
-              <Route path="/exports" element={<ExportHistory />} />
+              <Route path="/exports" element={<Exports />} />
               <Route path="/exports/new" element={<ExportBuilder />} />
               <Route path="/exports/history" element={<ExportHistory />} />
               <Route path="/import" element={<ImportStock />} />
