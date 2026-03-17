@@ -482,7 +482,7 @@ export default function ScrapeProducts() {
                     Shopify detected — will use Products API for fast, accurate extraction
                   </Badge>
                 ) : platformResult?.platform === 'woocommerce' ? (
-                  <Badge variant="outline" className="text-xs gap-1 border-amber-500/50 text-amber-600">
+                  <Badge variant="outline" className="text-xs gap-1 border-destructive/50 text-destructive">
                     <AlertTriangle className="h-3 w-3" />
                     WooCommerce detected — will use REST API
                   </Badge>
