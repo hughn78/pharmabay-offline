@@ -437,7 +437,6 @@ export default function ScrapeProducts() {
   }
 
   function handleExport() {
-    // Determine source rows based on scope
     let sourceRows: ExtractedProduct[];
     if (exportScope === "selected") {
       sourceRows = products.filter((p) => p._selected);
@@ -446,63 +445,39 @@ export default function ScrapeProducts() {
     } else {
       sourceRows = [...products];
     }
-
-    // Filter excluded unless toggled
     if (!exportIncludeExcluded) {
       sourceRows = sourceRows.filter((p) => !p._excluded);
     }
-
     if (sourceRows.length === 0) {
       toast.error("No rows to export with current filters");
       return;
     }
 
-    const exportCols = [
-      { key: "source_product_name", label: "Title" },
-      { key: "brand", label: "Brand" },
-      { key: "sell_price", label: "Price" },
-      { key: "compare_at_price", label: "Compare At Price" },
-      { key: "currency", label: "Currency" },
-      { key: "sku", label: "SKU" },
-      { key: "barcode", label: "Barcode" },
-      { key: "product_type", label: "Type" },
-      { key: "pack_size", label: "Pack Size" },
-      { key: "strength", label: "Strength" },
-      { key: "stock_status", label: "Stock" },
-      { key: "tags", label: "Tags" },
-      { key: "short_description", label: "Description" },
-      { key: "primary_image_url", label: "Primary Image URL" },
-      { key: "additional_image_urls", label: "Additional Image URLs" },
-      { key: "_sourceUrl", label: "Source URL" },
-      { key: "_extractionConfidence", label: "Confidence" },
-      { key: "scraped_at", label: "Scraped At" },
-    ];
-
+    const cols = getExportColumns(exportColumnPreset);
     const data = sourceRows.map((row) => {
       const out: Record<string, any> = {};
-      for (const col of exportCols) {
-        let val = (row as any)[col.key];
-        if (col.key === "tags" && Array.isArray(val)) val = val.join(", ");
-        if (col.key === "additional_image_urls" && Array.isArray(val)) val = val.join("|");
-        if (col.key === "scraped_at" && val) {
-          try { val = new Date(val).toISOString().replace("T", " ").slice(0, 16); } catch { /* keep raw */ }
+      for (const col of cols) {
+        let val = col.getter ? col.getter(row) : (row as any)[col.key];
+        if (col.format === "tags" && Array.isArray(val)) val = val.join(", ");
+        if (col.format === "pipe" && Array.isArray(val)) val = val.join("|");
+        if (col.format === "date" && val) {
+          try { val = new Date(val).toISOString().replace("T", " ").slice(0, 19); } catch { /* keep */ }
         }
-        if (col.key === "sell_price" || col.key === "compare_at_price") {
-          val = val != null ? Number(Number(val).toFixed(2)) : "";
-        }
-        out[col.label] = val ?? "";
+        if (col.format === "price") val = val != null && val !== "" ? Number(Number(val).toFixed(2)) : "";
+        if (col.format === "decimal") val = val != null && val !== "" ? Number(Number(val).toFixed(2)) : "";
+        if (col.format === "bool") val = val === true ? "true" : val === false ? "false" : "";
+        if (val === null || val === undefined) val = "";
+        out[col.label] = val;
       }
       return out;
     });
 
     const filename = exportFilename || getExportDefaultFilename();
-
     if (exportFormat === "csv") {
       exportScrapeCSV(data, filename);
     } else {
-      exportScrapeXLSX(data, exportCols, sourceRows, filename);
+      exportScrapeXLSX(data, cols, sourceRows, filename);
     }
-
     setShowExport(false);
     toast.success(`Exported ${sourceRows.length} products`);
   }
