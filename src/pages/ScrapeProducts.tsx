@@ -64,7 +64,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { bulkProductUpsert, type BulkUpsertMode } from "@/lib/api/bulk-upsert";
-import { triggerExport } from "@/lib/export-utils";
+
 import { buildJobConfig, runScrapeJob } from "@/lib/scrape-orchestrator";
 import { detectPlatform, type Platform, type PlatformDetectionResult } from "@/lib/utils/platformDetector";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -232,7 +232,10 @@ export default function ScrapeProducts() {
 
   // Export modal
   const [showExport, setShowExport] = useState(false);
-  const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("csv");
+  const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("xlsx");
+  const [exportScope, setExportScope] = useState<"all" | "selected" | "page">("all");
+  const [exportIncludeExcluded, setExportIncludeExcluded] = useState(false);
+  const [exportFilename, setExportFilename] = useState("");
 
   const ROWS_PER_PAGE = 50;
 
@@ -418,23 +421,89 @@ export default function ScrapeProducts() {
     }
   }
 
+  function getExportDefaultFilename(): string {
+    const domain = jobConfig?.targetDomain || "unknown";
+    const date = new Date().toISOString().slice(0, 10);
+    return `pharma-bay-${domain}-${date}`;
+  }
+
+  function openExportModal() {
+    setExportFilename(getExportDefaultFilename());
+    setExportScope("all");
+    setExportIncludeExcluded(false);
+    setExportFormat("xlsx");
+    setShowExport(true);
+  }
+
   function handleExport() {
-    const data = activeProducts.map(({
-      _id, _status, _excluded, _selected, _extractionConfidence,
-      _extractionNotes, _rawExtractedJson, ...rest
-    }) => rest);
-    const cols = REVIEW_COLUMNS.filter((c) => !c.key.startsWith("_")).map((c) => ({
-      key: c.key,
-      label: c.label,
-    }));
-    triggerExport({
-      format: exportFormat,
-      filename: `scrape-results-${new Date().toISOString().slice(0, 10)}`,
-      columns: cols,
-      data,
+    // Determine source rows based on scope
+    let sourceRows: ExtractedProduct[];
+    if (exportScope === "selected") {
+      sourceRows = products.filter((p) => p._selected);
+    } else if (exportScope === "page") {
+      sourceRows = paginatedProducts;
+    } else {
+      sourceRows = [...products];
+    }
+
+    // Filter excluded unless toggled
+    if (!exportIncludeExcluded) {
+      sourceRows = sourceRows.filter((p) => !p._excluded);
+    }
+
+    if (sourceRows.length === 0) {
+      toast.error("No rows to export with current filters");
+      return;
+    }
+
+    const exportCols = [
+      { key: "source_product_name", label: "Title" },
+      { key: "brand", label: "Brand" },
+      { key: "sell_price", label: "Price" },
+      { key: "compare_at_price", label: "Compare At Price" },
+      { key: "currency", label: "Currency" },
+      { key: "sku", label: "SKU" },
+      { key: "barcode", label: "Barcode" },
+      { key: "product_type", label: "Type" },
+      { key: "pack_size", label: "Pack Size" },
+      { key: "strength", label: "Strength" },
+      { key: "stock_status", label: "Stock" },
+      { key: "tags", label: "Tags" },
+      { key: "short_description", label: "Description" },
+      { key: "primary_image_url", label: "Primary Image URL" },
+      { key: "additional_image_urls", label: "Additional Image URLs" },
+      { key: "_sourceUrl", label: "Source URL" },
+      { key: "_extractionConfidence", label: "Confidence" },
+      { key: "scraped_at", label: "Scraped At" },
+    ];
+
+    const data = sourceRows.map((row) => {
+      const out: Record<string, any> = {};
+      for (const col of exportCols) {
+        let val = (row as any)[col.key];
+        if (col.key === "tags" && Array.isArray(val)) val = val.join(", ");
+        if (col.key === "additional_image_urls" && Array.isArray(val)) val = val.join("|");
+        if (col.key === "scraped_at" && val) {
+          try { val = new Date(val).toISOString().replace("T", " ").slice(0, 16); } catch { /* keep raw */ }
+        }
+        if (col.key === "sell_price" || col.key === "compare_at_price") {
+          val = val != null ? Number(Number(val).toFixed(2)) : "";
+        }
+        out[col.label] = val ?? "";
+      }
+      return out;
     });
+
+    const filename = exportFilename || getExportDefaultFilename();
+
+    if (exportFormat === "csv") {
+      exportScrapeCSV(data, filename);
+    } else {
+      exportScrapeXLSX(data, exportCols, sourceRows, filename);
+    }
+
     setShowExport(false);
-    toast.success("Export downloaded");
+    toast.success(`Exported ${sourceRows.length} products`);
   }
 
   // ==========================================
@@ -893,7 +962,7 @@ export default function ScrapeProducts() {
 
         <div className="flex gap-3">
           <Button onClick={() => window.location.assign("/products")}>View Products</Button>
-          <Button variant="outline" onClick={() => setShowExport(true)}>
+          <Button variant="outline" onClick={openExportModal}>
             <Download className="mr-2 h-4 w-4" />
             Export Results
           </Button>
@@ -909,7 +978,7 @@ export default function ScrapeProducts() {
           </Button>
         </div>
 
-        <ExportModal open={showExport} onOpenChange={setShowExport} format={exportFormat} setFormat={setExportFormat} onExport={handleExport} />
+        <ScrapeExportModal open={showExport} onOpenChange={setShowExport} format={exportFormat} setFormat={setExportFormat} scope={exportScope} setScope={setExportScope} includeExcluded={exportIncludeExcluded} setIncludeExcluded={setExportIncludeExcluded} filename={exportFilename} setFilename={setExportFilename} onExport={handleExport} totalCount={products.filter(p => !p._excluded).length} selectedCount={selectedProducts.length} pageCount={paginatedProducts.length} />
       </div>
     );
   }
@@ -938,7 +1007,7 @@ export default function ScrapeProducts() {
             {showColumnToggle ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
             Columns
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowExport(true)}>
+          <Button variant="outline" size="sm" onClick={openExportModal}>
             <FileSpreadsheet className="h-4 w-4 mr-1" />
             Export
           </Button>
@@ -1167,51 +1236,206 @@ export default function ScrapeProducts() {
       </Drawer>
 
       {/* Export Modal */}
-      <ExportModal open={showExport} onOpenChange={setShowExport} format={exportFormat} setFormat={setExportFormat} onExport={handleExport} />
+      <ScrapeExportModal open={showExport} onOpenChange={setShowExport} format={exportFormat} setFormat={setExportFormat} scope={exportScope} setScope={setExportScope} includeExcluded={exportIncludeExcluded} setIncludeExcluded={setExportIncludeExcluded} filename={exportFilename} setFilename={setExportFilename} onExport={handleExport} totalCount={products.filter(p => !p._excluded).length} selectedCount={selectedProducts.length} pageCount={paginatedProducts.length} />
     </div>
   );
 }
 
-function ExportModal({
+function ScrapeExportModal({
   open,
   onOpenChange,
   format,
   setFormat,
+  scope,
+  setScope,
+  includeExcluded,
+  setIncludeExcluded,
+  filename,
+  setFilename,
   onExport,
+  totalCount,
+  selectedCount,
+  pageCount,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   format: "csv" | "xlsx";
   setFormat: (v: "csv" | "xlsx") => void;
+  scope: "all" | "selected" | "page";
+  setScope: (v: "all" | "selected" | "page") => void;
+  includeExcluded: boolean;
+  setIncludeExcluded: (v: boolean) => void;
+  filename: string;
+  setFilename: (v: string) => void;
   onExport: () => void;
+  totalCount: number;
+  selectedCount: number;
+  pageCount: number;
 }) {
+  const countLabel = scope === "all" ? totalCount : scope === "selected" ? selectedCount : pageCount;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Export Products</DialogTitle>
-          <DialogDescription>Choose format and download.</DialogDescription>
+          <DialogTitle>Export Scraped Products</DialogTitle>
+          <DialogDescription>Choose scope, format, and download.</DialogDescription>
         </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div>
-            <Label>Format</Label>
-            <Select value={format} onValueChange={(v) => setFormat(v as "csv" | "xlsx")}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="csv">CSV</SelectItem>
-                <SelectItem value="xlsx">Excel (.xlsx)</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="py-4 space-y-5">
+          {/* Scope */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Scope</Label>
+            <div className="space-y-1.5">
+              {([
+                { value: "all" as const, label: `All products (${totalCount})` },
+                { value: "selected" as const, label: `Selected rows only (${selectedCount})` },
+                { value: "page" as const, label: `Current page only (${pageCount})` },
+              ]).map((opt) => (
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="radio"
+                    name="export-scope"
+                    checked={scope === opt.value}
+                    onChange={() => setScope(opt.value)}
+                    className="accent-[hsl(var(--primary))]"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+          {/* Format */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Format</Label>
+            <div className="space-y-1.5">
+              {([
+                { value: "xlsx" as const, label: "Excel (.xlsx)" },
+                { value: "csv" as const, label: "CSV (.csv)" },
+              ]).map((opt) => (
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="radio"
+                    name="export-format"
+                    checked={format === opt.value}
+                    onChange={() => setFormat(opt.value)}
+                    className="accent-[hsl(var(--primary))]"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+          {/* Include excluded */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="include-excluded"
+              checked={includeExcluded}
+              onCheckedChange={(v) => setIncludeExcluded(!!v)}
+            />
+            <Label htmlFor="include-excluded" className="text-sm cursor-pointer">
+              Include rows marked as Excluded
+            </Label>
+          </div>
+          {/* Filename */}
+          <div className="space-y-1">
+            <Label className="text-sm font-medium">Filename</Label>
+            <Input value={filename} onChange={(e) => setFilename(e.target.value)} />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={onExport}>
             <Download className="mr-2 h-4 w-4" />
-            Download
+            Export {countLabel} products
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
+
+// --- Scrape export helpers ---
+
+function exportScrapeCSV(data: Record<string, any>[], filename: string) {
+  import("papaparse").then((Papa) => {
+    const csv = Papa.default.unparse(data, { header: true });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    downloadBlobFile(blob, `${filename}.csv`);
+  });
+}
+
+function exportScrapeXLSX(
+  data: Record<string, any>[],
+  cols: { key: string; label: string }[],
+  sourceRows: ExtractedProduct[],
+  filename: string,
+) {
+  import("xlsx").then((XLSX) => {
+    const headers = cols.map((c) => c.label);
+    const rows = data.map((row) => headers.map((h) => row[h] ?? ""));
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+    // Column widths
+    ws["!cols"] = headers.map((h) => ({
+      wch: Math.min(60, Math.max(12, h.length + 2)),
+    }));
+
+    // Freeze header
+    ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+
+    // Style header row
+    for (let c = 0; c < headers.length; c++) {
+      const addr = XLSX.utils.encode_cell({ r: 0, c });
+      if (!ws[addr]) continue;
+      ws[addr].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+        fill: { fgColor: { rgb: "2D5016" } },
+      };
+    }
+
+    // Style data rows
+    const priceColIdx = headers.indexOf("Price");
+    const compPriceColIdx = headers.indexOf("Compare At Price");
+    const stockColIdx = headers.indexOf("Stock");
+    const confColIdx = headers.indexOf("Confidence");
+
+    for (let r = 1; r <= rows.length; r++) {
+      const srcRow = sourceRows[r - 1];
+      const isOutOfStock = srcRow?.stock_status === "out_of_stock";
+      const isLowConf = srcRow?._extractionConfidence != null && Number(srcRow._extractionConfidence) < 0.5;
+
+      for (let c = 0; c < headers.length; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (!ws[addr]) continue;
+
+        // Price format
+        if (c === priceColIdx || c === compPriceColIdx) {
+          if (typeof ws[addr].v === "number") {
+            ws[addr].z = "$#,##0.00";
+          }
+        }
+
+        // Conditional fill
+        if (isOutOfStock) {
+          ws[addr].s = { ...(ws[addr].s || {}), fill: { fgColor: { rgb: "FFE4E4" } } };
+        } else if (isLowConf) {
+          ws[addr].s = { ...(ws[addr].s || {}), fill: { fgColor: { rgb: "FFFDE4" } } };
+        }
+      }
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "PharmaBay Products");
+    XLSX.writeFile(wb, `${filename}.xlsx`);
+  });
+}
+
+function downloadBlobFile(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
