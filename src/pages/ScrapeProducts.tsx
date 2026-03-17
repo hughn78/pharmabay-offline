@@ -1356,15 +1356,11 @@ function ScrapeExportModal({
 // --- Scrape export helpers ---
 
 function exportScrapeCSV(data: Record<string, any>[], filename: string) {
-  const Papa = (await_papaparse());
-  const csv = Papa.unparse(data, { header: true });
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  downloadBlobFile(blob, `${filename}.csv`);
-}
-
-function await_papaparse() {
-  // papaparse is already imported in export-utils, reuse sync require
-  return require("papaparse") as typeof import("papaparse");
+  import("papaparse").then((Papa) => {
+    const csv = Papa.default.unparse(data, { header: true });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    downloadBlobFile(blob, `${filename}.csv`);
+  });
 }
 
 function exportScrapeXLSX(
