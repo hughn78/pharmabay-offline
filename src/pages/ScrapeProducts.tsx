@@ -962,7 +962,7 @@ export default function ScrapeProducts() {
 
         <div className="flex gap-3">
           <Button onClick={() => window.location.assign("/products")}>View Products</Button>
-          <Button variant="outline" onClick={() => setShowExport(true)}>
+          <Button variant="outline" onClick={openExportModal}>
             <Download className="mr-2 h-4 w-4" />
             Export Results
           </Button>
