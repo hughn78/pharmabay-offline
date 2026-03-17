@@ -22,6 +22,7 @@ import ChannelListingImports from "./pages/ChannelListingImports";
 import EbayCallback from "./pages/EbayCallback";
 import MarketResearch from "./pages/MarketResearch";
 import Auth from "./pages/Auth";
+import Exports from "./pages/Exports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
