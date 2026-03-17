@@ -671,14 +671,30 @@ function extractFromPatterns(markdown: string, sourceUrl: string): ExtractedProd
 
 function extractProductCardsFromListing(markdown: string, sourceUrl: string): ExtractedProduct[] {
   const products: ExtractedProduct[] = [];
-  // Look for repeated product-card-like patterns: linked titles with prices
-  const cardRegex = /\[([^\]]{3,80})\]\(([^)]+)\)[^\n]*?\$\s?([\d,]+\.?\d{0,2})/g;
+  const seenTitles = new Set<string>();
+
+  // Cart/UI phrases to skip
+  const skipPhrases = [
+    'your cart', 'add to cart', 'view cart', 'cart total', 'in cart',
+    'checkout', 'shopping cart', 'empty cart', 'skip to', 'close',
+    'menu', 'navigation', 'search', 'login', 'sign in', 'newsletter',
+    'free shipping', 'subscribe', 'view and order',
+  ];
+
+  const isSkippable = (text: string) => {
+    const lower = text.toLowerCase();
+    return skipPhrases.some(p => lower.includes(p));
+  };
+
+  // Pattern 1: Markdown links with prices nearby — [Title](url) ... $XX.XX
+  const cardRegex = /\[([^\]]{3,100})\]\(([^)]+)\)[^\n]*?\$\s?([\d,]+\.?\d{0,2})/g;
   let match;
   while ((match = cardRegex.exec(markdown)) !== null) {
     const title = match[1].replace(/[*_`]/g, '').trim();
     const url = match[2];
     const price = parseFloat(match[3].replace(',', ''));
-    if (title && price) {
+    if (title && price > 0 && !isSkippable(title) && !seenTitles.has(title.toLowerCase())) {
+      seenTitles.add(title.toLowerCase());
       products.push(createExtractedProduct({
         source_product_name: title,
         sell_price: price,
@@ -689,30 +705,35 @@ function extractProductCardsFromListing(markdown: string, sourceUrl: string): Ex
     }
   }
 
-  // Also try: heading + price pattern for cards without links
+  // Pattern 2: Look for repeated blocks of title lines near prices
+  // Shopify collections often render as: Title\nRegular price\n$XX.XX
   const lines = markdown.split('\n');
-  let i = 0;
-  while (i < lines.length) {
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    // Look for non-heading title lines followed by prices
-    if (line.length > 5 && line.length < 100 && !line.startsWith('#') && !line.startsWith('|') && !line.startsWith('-') && !line.startsWith('[')) {
-      const nextLines = lines.slice(i + 1, i + 4).join(' ');
-      const priceMatch = nextLines.match(/\$\s?([\d,]+\.?\d{0,2})/);
-      if (priceMatch) {
-        const existing = products.find(p => p.source_product_name === line);
-        if (!existing) {
-          products.push(createExtractedProduct({
-            source_product_name: line,
-            sell_price: parseFloat(priceMatch[1].replace(',', '')),
-            _extractionNotes: ['Listing card (title+price proximity)'],
-            _extractionConfidence: 0.3,
-          }, sourceUrl));
-        }
-        i += 3;
-        continue;
+
+    // Skip obvious non-product lines
+    if (!line || line.length < 5 || line.length > 120) continue;
+    if (line.startsWith('#') || line.startsWith('|') || line.startsWith('-') || line.startsWith('[') || line.startsWith('!')) continue;
+    if (isSkippable(line)) continue;
+    // Skip lines that look like labels/UI
+    if (/^(regular price|sale price|from|sold out|quick view|compare|filter|sort)/i.test(line)) continue;
+
+    // Check if next few lines contain a price
+    const nextChunk = lines.slice(i + 1, i + 5).join(' ');
+    const priceMatch = nextChunk.match(/\$\s?([\d,]+\.?\d{0,2})/);
+    if (priceMatch) {
+      const price = parseFloat(priceMatch[1].replace(',', ''));
+      if (price > 0 && !seenTitles.has(line.toLowerCase())) {
+        seenTitles.add(line.toLowerCase());
+        products.push(createExtractedProduct({
+          source_product_name: line,
+          sell_price: price,
+          _extractionNotes: ['Listing card (title+price proximity)'],
+          _extractionConfidence: 0.3,
+        }, sourceUrl));
+        i += 3; // Skip past the price lines
       }
     }
-    i++;
   }
 
   return products;
