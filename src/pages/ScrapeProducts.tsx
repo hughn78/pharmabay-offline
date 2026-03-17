@@ -468,7 +468,34 @@ export default function ScrapeProducts() {
               onChange={(e) => setUrl(e.target.value)}
             />
 
-            <div>
+            {/* Platform Detection Badge */}
+            {(detectingPlatform || platformResult) && url.trim().length >= 8 && (
+              <div className="flex items-center gap-2">
+                {detectingPlatform ? (
+                  <Badge variant="outline" className="text-xs gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Detecting platform…
+                  </Badge>
+                ) : platformResult?.platform === 'shopify' ? (
+                  <Badge variant="outline" className="text-xs gap-1 border-green-500/50 text-green-600">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Shopify detected — will use Products API for fast, accurate extraction
+                  </Badge>
+                ) : platformResult?.platform === 'woocommerce' ? (
+                  <Badge variant="outline" className="text-xs gap-1 border-amber-500/50 text-amber-600">
+                    <AlertTriangle className="h-3 w-3" />
+                    WooCommerce detected — will use REST API
+                  </Badge>
+                ) : platformResult ? (
+                  <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
+                    <Info className="h-3 w-3" />
+                    Platform unknown — will use Firecrawl AI extraction
+                  </Badge>
+                ) : null}
+              </div>
+            )}
+
+
               <Label className="text-sm font-medium mb-2 block">Scrape Mode</Label>
               <div className="grid grid-cols-3 gap-3">
                 {([
