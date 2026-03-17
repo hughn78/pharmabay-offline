@@ -23,6 +23,7 @@ import EbayCallback from "./pages/EbayCallback";
 import MarketResearch from "./pages/MarketResearch";
 import Auth from "./pages/Auth";
 import Exports from "./pages/Exports";
+import ScrapeProducts from "./pages/ScrapeProducts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
