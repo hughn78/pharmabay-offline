@@ -421,23 +421,89 @@ export default function ScrapeProducts() {
     }
   }
 
+  function getExportDefaultFilename(): string {
+    const domain = jobConfig?.targetDomain || "unknown";
+    const date = new Date().toISOString().slice(0, 10);
+    return `pharma-bay-${domain}-${date}`;
+  }
+
+  function openExportModal() {
+    setExportFilename(getExportDefaultFilename());
+    setExportScope("all");
+    setExportIncludeExcluded(false);
+    setExportFormat("xlsx");
+    setShowExport(true);
+  }
+
   function handleExport() {
-    const data = activeProducts.map(({
-      _id, _status, _excluded, _selected, _extractionConfidence,
-      _extractionNotes, _rawExtractedJson, ...rest
-    }) => rest);
-    const cols = REVIEW_COLUMNS.filter((c) => !c.key.startsWith("_")).map((c) => ({
-      key: c.key,
-      label: c.label,
-    }));
-    triggerExport({
-      format: exportFormat,
-      filename: `scrape-results-${new Date().toISOString().slice(0, 10)}`,
-      columns: cols,
-      data,
+    // Determine source rows based on scope
+    let sourceRows: ExtractedProduct[];
+    if (exportScope === "selected") {
+      sourceRows = products.filter((p) => p._selected);
+    } else if (exportScope === "page") {
+      sourceRows = paginatedProducts;
+    } else {
+      sourceRows = [...products];
+    }
+
+    // Filter excluded unless toggled
+    if (!exportIncludeExcluded) {
+      sourceRows = sourceRows.filter((p) => !p._excluded);
+    }
+
+    if (sourceRows.length === 0) {
+      toast.error("No rows to export with current filters");
+      return;
+    }
+
+    const exportCols = [
+      { key: "source_product_name", label: "Title" },
+      { key: "brand", label: "Brand" },
+      { key: "sell_price", label: "Price" },
+      { key: "compare_at_price", label: "Compare At Price" },
+      { key: "currency", label: "Currency" },
+      { key: "sku", label: "SKU" },
+      { key: "barcode", label: "Barcode" },
+      { key: "product_type", label: "Type" },
+      { key: "pack_size", label: "Pack Size" },
+      { key: "strength", label: "Strength" },
+      { key: "stock_status", label: "Stock" },
+      { key: "tags", label: "Tags" },
+      { key: "short_description", label: "Description" },
+      { key: "primary_image_url", label: "Primary Image URL" },
+      { key: "additional_image_urls", label: "Additional Image URLs" },
+      { key: "_sourceUrl", label: "Source URL" },
+      { key: "_extractionConfidence", label: "Confidence" },
+      { key: "scraped_at", label: "Scraped At" },
+    ];
+
+    const data = sourceRows.map((row) => {
+      const out: Record<string, any> = {};
+      for (const col of exportCols) {
+        let val = (row as any)[col.key];
+        if (col.key === "tags" && Array.isArray(val)) val = val.join(", ");
+        if (col.key === "additional_image_urls" && Array.isArray(val)) val = val.join("|");
+        if (col.key === "scraped_at" && val) {
+          try { val = new Date(val).toISOString().replace("T", " ").slice(0, 16); } catch { /* keep raw */ }
+        }
+        if (col.key === "sell_price" || col.key === "compare_at_price") {
+          val = val != null ? Number(Number(val).toFixed(2)) : "";
+        }
+        out[col.label] = val ?? "";
+      }
+      return out;
     });
+
+    const filename = exportFilename || getExportDefaultFilename();
+
+    if (exportFormat === "csv") {
+      exportScrapeCSV(data, filename);
+    } else {
+      exportScrapeXLSX(data, exportCols, sourceRows, filename);
+    }
+
     setShowExport(false);
-    toast.success("Export downloaded");
+    toast.success(`Exported ${sourceRows.length} products`);
   }
 
   // ==========================================
