@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useBeforeUnload } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,8 @@ import { toast } from "sonner";
 import { bulkProductUpsert, type BulkUpsertMode } from "@/lib/api/bulk-upsert";
 import { triggerExport } from "@/lib/export-utils";
 import { buildJobConfig, runScrapeJob } from "@/lib/scrape-orchestrator";
+import { detectPlatform, type Platform, type PlatformDetectionResult } from "@/lib/utils/platformDetector";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   type ScrapeProgress,
   type ExtractedProduct,
@@ -101,6 +103,7 @@ const REVIEW_COLUMNS = [
   { key: "pack_size", label: "Pack Size" },
   { key: "strength", label: "Strength" },
   { key: "stock_status", label: "Stock" },
+  { key: "_extractionConfidence", label: "Confidence" },
   { key: "_sourceUrl", label: "Source URL" },
 ];
 
@@ -170,6 +173,32 @@ export default function ScrapeProducts() {
   const [excludePaths, setExcludePaths] = useState("");
   const [importMode, setImportMode] = useState<BulkUpsertMode>("fill_blanks");
   const [complianceChecked, setComplianceChecked] = useState(false);
+  const [platformResult, setPlatformResult] = useState<PlatformDetectionResult | null>(null);
+  const [detectingPlatform, setDetectingPlatform] = useState(false);
+  const debouncedUrl = useDebouncedValue(url, 800);
+
+  // Run platform detection when URL changes
+  useEffect(() => {
+    const trimmed = debouncedUrl.trim();
+    if (!trimmed || trimmed.length < 8) {
+      setPlatformResult(null);
+      return;
+    }
+    let cancelled = false;
+    setDetectingPlatform(true);
+    detectPlatform(trimmed).then(result => {
+      if (!cancelled) {
+        setPlatformResult(result);
+        setDetectingPlatform(false);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setPlatformResult(null);
+        setDetectingPlatform(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [debouncedUrl]);
 
   // Progress state
   const [progress, setProgress] = useState<ScrapeProgress | null>(null);
@@ -439,6 +468,33 @@ export default function ScrapeProducts() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
+
+            {/* Platform Detection Badge */}
+            {(detectingPlatform || platformResult) && url.trim().length >= 8 && (
+              <div className="flex items-center gap-2">
+                {detectingPlatform ? (
+                  <Badge variant="outline" className="text-xs gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Detecting platform…
+                  </Badge>
+                ) : platformResult?.platform === 'shopify' ? (
+                  <Badge variant="outline" className="text-xs gap-1 border-primary/50 text-primary">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Shopify detected — will use Products API for fast, accurate extraction
+                  </Badge>
+                ) : platformResult?.platform === 'woocommerce' ? (
+                  <Badge variant="outline" className="text-xs gap-1 border-destructive/50 text-destructive">
+                    <AlertTriangle className="h-3 w-3" />
+                    WooCommerce detected — will use REST API
+                  </Badge>
+                ) : platformResult ? (
+                  <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
+                    <Info className="h-3 w-3" />
+                    Platform unknown — will use Firecrawl AI extraction
+                  </Badge>
+                ) : null}
+              </div>
+            )}
 
             <div>
               <Label className="text-sm font-medium mb-2 block">Scrape Mode</Label>

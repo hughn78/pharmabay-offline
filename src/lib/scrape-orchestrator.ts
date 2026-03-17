@@ -6,6 +6,8 @@
 import { firecrawlApi } from '@/lib/api/firecrawl';
 import { detectPageType, extractCandidateUrls, isLikelyProductUrl } from '@/lib/utils/pageTypeDetector';
 import { sanitizeExtractedProducts } from '@/lib/utils/extractionSanitizer';
+import { fetchShopifyProducts } from '@/lib/api/shopifyFetcher';
+import { detectPlatform, type Platform } from '@/lib/utils/platformDetector';
 import {
   type ScrapeJobConfig,
   type ScrapeProgress,
@@ -118,7 +120,72 @@ export async function runScrapeJob(
 
   try {
     // =============================================
-    // STAGE 1 — Seed Validation & Fetch
+    // STAGE 0 — Platform Detection (Shopify fast-path)
+    // =============================================
+    updateStage('seed_validation', 'Detecting platform…');
+    log('seed_validation', 'info', `Probing platform for ${config.targetDomain}`);
+
+    let detectedPlatform: Platform = 'unknown';
+    try {
+      const detection = await detectPlatform(config.targetSiteUrl);
+      detectedPlatform = detection.platform;
+      detection.signals.forEach(s => log('seed_validation', 'info', `Platform signal: ${s}`));
+      log('seed_validation', 'info', `Platform detected: ${detectedPlatform} (confidence: ${(detection.confidence * 100).toFixed(0)}%)`);
+    } catch (err: any) {
+      log('seed_validation', 'warn', `Platform detection failed: ${err.message}, falling back to Firecrawl`);
+    }
+
+    if (cancelledRef.current) return progress;
+
+    // =============================================
+    // SHOPIFY FAST-PATH — use JSON API instead of scraping
+    // =============================================
+    if (detectedPlatform === 'shopify') {
+      updateStage('discovery', 'Fetching products via Shopify API…');
+      log('discovery', 'info', 'Using Shopify Products JSON API — no AI extraction needed');
+
+      progress.diagnostics.detectedPageType = 'shopify_api';
+      progress.diagnostics.seedFetchSuccess = true;
+      progress.diagnostics.seedFetchHttpStatus = 200;
+
+      const shopifyResult = await fetchShopifyProducts(
+        config.targetSiteUrl,
+        Math.ceil(config.maxPages / 250) + 1, // Convert maxPages to API page count
+        (sp) => {
+          progress.productsExtracted = sp.totalFetched;
+          progress.pagesScraped = sp.page;
+          progress.pagesDiscovered = sp.totalFetched;
+          onProgress({ ...progress });
+        }
+      );
+
+      if (cancelledRef.current) return progress;
+
+      if (shopifyResult.error) {
+        log('discovery', 'error', `Shopify API error: ${shopifyResult.error}`);
+        // Fall through to Firecrawl if Shopify API failed but we haven't returned yet
+        if (shopifyResult.products.length === 0) {
+          log('discovery', 'warn', 'Shopify API returned no products, falling back to Firecrawl scraping');
+          detectedPlatform = 'unknown'; // Reset to use Firecrawl path below
+        }
+      }
+
+      if (detectedPlatform === 'shopify' && shopifyResult.products.length > 0) {
+        const { clean, skipped } = sanitizeExtractedProducts(shopifyResult.products);
+        skipped.forEach(s => log('extraction', 'warn', `Filtered: ${s.reason} — "${s.title}"`));
+
+        progress.extractedProducts = clean;
+        progress.productsExtracted = clean.length;
+        progress.diagnostics.extractedProductPageCount = shopifyResult.totalFetched;
+
+        log('extraction', 'info', `Extracted ${clean.length} product(s) via Shopify API (${skipped.length} filtered)`);
+        updateStage('complete', 'Complete');
+        return progress;
+      }
+    }
+
+    // =============================================
+    // STAGE 1 — Seed Validation & Fetch (Firecrawl path)
     // =============================================
     updateStage('seed_validation', 'Fetching seed page…');
     log('seed_validation', 'info', `Fetching seed URL: ${config.targetSiteUrl}`);
