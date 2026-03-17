@@ -5,6 +5,7 @@
 
 import { firecrawlApi } from '@/lib/api/firecrawl';
 import { detectPageType, extractCandidateUrls, isLikelyProductUrl } from '@/lib/utils/pageTypeDetector';
+import { sanitizeExtractedProducts } from '@/lib/utils/extractionSanitizer';
 import {
   type ScrapeJobConfig,
   type ScrapeProgress,
