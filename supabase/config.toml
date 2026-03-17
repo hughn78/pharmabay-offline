@@ -35,3 +35,18 @@ verify_jwt = false
 
 [functions.shopify-storefront-lookup]
 verify_jwt = false
+
+[functions.firecrawl-scrape]
+verify_jwt = false
+
+[functions.firecrawl-search]
+verify_jwt = false
+
+[functions.firecrawl-map]
+verify_jwt = false
+
+[functions.firecrawl-crawl]
+verify_jwt = false
+
+[functions.bulk-product-upsert]
+verify_jwt = false
