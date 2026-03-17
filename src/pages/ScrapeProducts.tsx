@@ -172,6 +172,32 @@ export default function ScrapeProducts() {
   const [excludePaths, setExcludePaths] = useState("");
   const [importMode, setImportMode] = useState<BulkUpsertMode>("fill_blanks");
   const [complianceChecked, setComplianceChecked] = useState(false);
+  const [platformResult, setPlatformResult] = useState<PlatformDetectionResult | null>(null);
+  const [detectingPlatform, setDetectingPlatform] = useState(false);
+  const debouncedUrl = useDebouncedValue(url, 800);
+
+  // Run platform detection when URL changes
+  useEffect(() => {
+    const trimmed = debouncedUrl.trim();
+    if (!trimmed || trimmed.length < 8) {
+      setPlatformResult(null);
+      return;
+    }
+    let cancelled = false;
+    setDetectingPlatform(true);
+    detectPlatform(trimmed).then(result => {
+      if (!cancelled) {
+        setPlatformResult(result);
+        setDetectingPlatform(false);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setPlatformResult(null);
+        setDetectingPlatform(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [debouncedUrl]);
 
   // Progress state
   const [progress, setProgress] = useState<ScrapeProgress | null>(null);
