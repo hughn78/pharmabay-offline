@@ -1007,7 +1007,7 @@ export default function ScrapeProducts() {
             {showColumnToggle ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
             Columns
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowExport(true)}>
+          <Button variant="outline" size="sm" onClick={openExportModal}>
             <FileSpreadsheet className="h-4 w-4 mr-1" />
             Export
           </Button>
