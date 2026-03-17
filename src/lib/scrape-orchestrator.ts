@@ -227,16 +227,19 @@ export async function runScrapeJob(
     // =============================================
     if (config.scrapeMode === 'single') {
       updateStage('extraction', 'Extracting product data from single page…');
-      const products = extractProductsFromContent(seedData.markdown || seedMarkdown, seedHtml, config.targetSiteUrl);
-      progress.extractedProducts = products;
-      progress.productsExtracted = products.length;
+      const rawProducts = extractProductsFromContent(seedData.markdown || seedMarkdown, seedHtml, config.targetSiteUrl);
+      const { clean, skipped } = sanitizeExtractedProducts(rawProducts);
+      progress.extractedProducts = clean;
+      progress.productsExtracted = clean.length;
       progress.diagnostics.extractedProductPageCount = 1;
 
-      if (products.length === 0) {
+      skipped.forEach(s => log('extraction', 'warn', `Skipped: ${s.reason} — "${s.title}"`));
+
+      if (clean.length === 0) {
         progress.diagnostics.failureCategory = 'PRODUCT_EXTRACTION_EMPTY';
-        log('extraction', 'warn', 'No products could be extracted from this page');
+        log('extraction', 'warn', `No products could be extracted from this page (${skipped.length} rows filtered as cart/UI artifacts)`);
       } else {
-        log('extraction', 'info', `Extracted ${products.length} product(s) from single page`);
+        log('extraction', 'info', `Extracted ${clean.length} product(s) from single page (${skipped.length} filtered)`);
       }
 
       updateStage('complete', 'Complete');
