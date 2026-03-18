@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import { uploadExportCsv } from "@/lib/export-storage";
 
 // eBay AU Draft Listings template
 const EBAY_DRAFT_INFO_LINES = [

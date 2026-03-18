@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ComplianceBadge } from "@/components/ui/ComplianceBadge";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import { uploadExportCsv } from "@/lib/export-storage";
 
 type Platform = "ebay" | "shopify" | "generic";
 
