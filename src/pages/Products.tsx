@@ -35,6 +35,8 @@ import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+const PAGE_SIZE = 50;
+
 export default function Products() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -42,8 +44,12 @@ export default function Products() {
   const [complianceFilter, setComplianceFilter] = useState("all");
   const [channelFilter, setChannelFilter] = useState("all");
   const [isRunningCompliance, setIsRunningCompliance] = useState(false);
+  const [page, setPage] = useState(0);
   const queryClient = useQueryClient();
   const exportCart = useExportCart();
+
+  // Reset page when filters change
+  const queryKey = ["products", debouncedSearch, complianceFilter, page];
 
   const { data: complianceRules = [] } = useQuery({
     queryKey: ["compliance-rules"],
@@ -84,14 +90,40 @@ export default function Products() {
     }
   };
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", debouncedSearch, complianceFilter],
+  // Count query for total rows matching current filters
+  const { data: totalCount = 0 } = useQuery({
+    queryKey: ["products-count", debouncedSearch, complianceFilter],
     queryFn: async () => {
+      let q = supabase
+        .from("products")
+        .select("id", { count: "exact", head: true });
+
+      if (debouncedSearch) {
+        q = q.or(buildSafeIlikeOr(["source_product_name", "barcode", "sku"], debouncedSearch));
+      }
+      if (complianceFilter !== "all") {
+        q = q.eq("compliance_status", complianceFilter);
+      }
+      const { count, error } = await q;
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  // Reset page to 0 when filters change
+  const { data: products = [], isLoading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       let q = supabase
         .from("products")
         .select("*")
         .order("updated_at", { ascending: false })
-        .limit(100);
+        .range(from, to);
 
       if (debouncedSearch) {
         q = q.or(buildSafeIlikeOr(["source_product_name", "barcode", "sku"], debouncedSearch));
