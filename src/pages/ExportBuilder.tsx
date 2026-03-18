@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ComplianceBadge } from "@/components/ui/ComplianceBadge";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import { uploadExportCsv } from "@/lib/export-storage";
 
 type Platform = "ebay" | "shopify" | "generic";
 
@@ -227,12 +228,16 @@ export default function ExportBuilder() {
     a.click();
     URL.revokeObjectURL(url);
 
-    // Log to export_batches
+    // Upload to storage for Export History re-downloads
+    const fileUrl = await uploadExportCsv(csvText, filename);
+
+    // Log to export_batches with file_url
     try {
       await supabase.from("export_batches").insert({
         batch_name: filename,
         platform,
         product_count: cartProducts.length,
+        file_url: fileUrl,
       });
       toast.success("Export saved to history");
     } catch {
