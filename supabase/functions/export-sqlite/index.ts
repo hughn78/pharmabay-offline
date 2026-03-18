@@ -36,6 +36,8 @@ const TABLES = [
   "shopify_sync_runs",
   "shopify_write_jobs",
   "shopify_live_products",
+  "stock_sync_runs",
+  "stock_sync_items",
 ];
 
 // Map Postgres types to SQLite types
