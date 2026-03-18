@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, RefreshCw } from "lucide-react";
+import { Package, Search, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
 import { LiveStatusBadges } from "@/components/products/LiveStatusBadges";
 import { DraftStatusBadges } from "@/components/products/DraftStatusBadges";
