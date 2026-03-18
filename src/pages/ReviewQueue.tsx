@@ -316,15 +316,20 @@ export default function ReviewQueue() {
     });
 
     const csvContent = Papa.unparse({ fields: shopifyHeaders, data: rows });
-    downloadCsv(csvContent, `shopify-import-${new Date().toISOString().slice(0, 10)}.csv`);
+    const filename = `shopify-import-${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadCsv(csvContent, filename);
+
+    // Upload to storage for Export History re-downloads
+    const fileUrl = await uploadExportCsv(csvContent, filename);
 
     // Mark exported
     const exportedIds = targets.map((d: any) => d.id);
     await supabase.from("shopify_drafts").update({ channel_status: "exported" }).in("id", exportedIds);
     await supabase.from("export_batches").insert({
-      batch_name: `Shopify Export ${new Date().toLocaleDateString()}`,
+      batch_name: filename,
       platform: "shopify",
       product_count: targets.length,
+      file_url: fileUrl,
     });
 
     toast.success(`Exported ${targets.length} Shopify products`);
