@@ -201,15 +201,20 @@ export default function ReviewQueue() {
       ...rows.map(r => r.map(csvEscape).join(",")),
     ];
     const csvContent = "\uFEFF" + csvLines.join("\n");
-    downloadCsv(csvContent, `eBay-draft-listings-${new Date().toISOString().slice(0, 10)}.csv`);
+    const filename = `eBay-draft-listings-${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadCsv(csvContent, filename);
+
+    // Upload to storage for Export History re-downloads
+    const fileUrl = await uploadExportCsv(csvContent, filename);
 
     // Mark exported
     const exportedIds = targets.map((d: any) => d.id);
     await supabase.from("ebay_drafts").update({ channel_status: "exported" }).in("id", exportedIds);
     await supabase.from("export_batches").insert({
-      batch_name: `eBay Export ${new Date().toLocaleDateString()}`,
+      batch_name: filename,
       platform: "ebay",
       product_count: targets.length,
+      file_url: fileUrl,
     });
 
     toast.success(`Exported ${targets.length} eBay listings`);
