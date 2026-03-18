@@ -51,6 +51,11 @@ export default function Products() {
   // Reset page when filters change
   const queryKey = ["products", debouncedSearch, complianceFilter, page];
 
+  // Reset to first page when search/filter changes
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch, complianceFilter]);
+
   const { data: complianceRules = [] } = useQuery({
     queryKey: ["compliance-rules"],
     queryFn: async () => {
