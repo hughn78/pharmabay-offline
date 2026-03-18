@@ -40,6 +40,8 @@ const TABLES = [
   "product_research_results",
   "pricebook_import_runs",
   "product_import_conflicts",
+  "stock_sync_runs",
+  "stock_sync_items",
 ];
 
 function escapeSQL(val: unknown): string {
