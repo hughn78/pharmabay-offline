@@ -10,11 +10,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { EbayPricingPanel } from "@/components/ebay/EbayPricingPanel";
+import { PricingDashboard } from "@/components/pricing/PricingDashboard";
 import { EbayPublishPanel } from "@/components/ebay/EbayPublishPanel";
 import { EbayCategoryPicker } from "@/components/ebay/EbayCategoryPicker";
 import { CompetitorPricingPanel } from "@/components/ebay/CompetitorPricingPanel";
 import { AiDescriptionGenerator } from "@/components/ai/AiDescriptionGenerator";
 import { LiveOnlineStateCard } from "@/components/products/LiveOnlineStateCard";
+import { TitleGenerator } from "@/components/listing/TitleGenerator";
+import { CopyGuardrails } from "@/components/listing/CopyGuardrails";
+import { AutosaveIndicator, useAutosave } from "@/components/listing/AutosaveIndicator";
 import { FormField } from "./FormField";
 
 interface EbayTabProps {
@@ -25,7 +29,6 @@ interface EbayTabProps {
 export function EbayTab({ product, draft }: EbayTabProps) {
   const queryClient = useQueryClient();
   
-  // Compute enriched suggestions from product.enrichment_summary
   const enrichmentSummary = (product.enrichment_summary as Record<string, unknown>) || {};
   const suggestedTitle = enrichmentSummary.ebay_title_suggestion as string | undefined;
   const suggestedMpn = enrichmentSummary.mpn as string | undefined;
@@ -58,8 +61,6 @@ export function EbayTab({ product, draft }: EbayTabProps) {
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
-
-  const charCount = form.title.length;
 
   const saveDraft = useMutation({
     mutationFn: async () => {
@@ -100,34 +101,53 @@ export function EbayTab({ product, draft }: EbayTabProps) {
     onError: (err) => toast.error("Failed", { description: String(err) }),
   });
 
+  // Autosave
+  const hasChanges = draft ? (
+    form.title !== ((draft.title as string) || "") ||
+    form.description_html !== ((draft.description_html as string) || "") ||
+    form.buy_it_now_price !== ((draft.buy_it_now_price as string) || "")
+  ) : form.title !== "" || form.description_html !== "";
+
+  const { saveState, lastSaved } = useAutosave({
+    hasChanges,
+    onSave: async () => { await saveDraft.mutateAsync(); },
+  });
+
   return (
     <div className="space-y-4">
       <LiveOnlineStateCard productId={product.id as string} channel="ebay" draft={draft} />
+
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant={draft?.channel_status === "ready" ? "default" : "outline"}>
-              {(draft?.channel_status as string) || "No Draft"}
-            </Badge>
-            {draft?.published_listing_id && (
-              <Badge variant="outline" className="text-[10px] font-mono">Item# {draft.published_listing_id as string}</Badge>
-            )}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Badge variant={draft?.channel_status === "ready" ? "default" : "outline"}>
+                {(draft?.channel_status as string) || "No Draft"}
+              </Badge>
+              {draft?.published_listing_id && (
+                <Badge variant="outline" className="text-[10px] font-mono">Item# {draft.published_listing_id as string}</Badge>
+              )}
+            </div>
+            <AutosaveIndicator saveState={saveState} lastSaved={lastSaved} hasChanges={hasChanges} />
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">eBay Title</Label>
-              <span className={`text-xs ${charCount > 80 ? "text-destructive" : "text-muted-foreground"}`}>
-                {charCount}/80
-              </span>
-            </div>
-            <Input value={form.title} onChange={(e) => handleChange("title", e.target.value)} placeholder="Brand + Product + Strength + Form + Pack Size" />
-            {suggestedTitle && !form.title && (
-              <p className="text-xs text-muted-foreground">
-                <span className="font-medium">Suggested:</span> {suggestedTitle}
-              </p>
-            )}
-          </div>
+          {/* Title with generator */}
+          <TitleGenerator
+            product={product}
+            channel="ebay"
+            currentTitle={form.title}
+            onApply={(t) => handleChange("title", t)}
+          />
+          <Input
+            value={form.title}
+            onChange={(e) => handleChange("title", e.target.value)}
+            placeholder="Brand + Product + Strength + Form + Pack Size"
+          />
+          {suggestedTitle && !form.title && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Suggested:</span> {suggestedTitle}
+            </p>
+          )}
 
           <FormField label="Subtitle" value={form.subtitle} onChange={(v) => handleChange("subtitle", v)} />
 
@@ -135,11 +155,12 @@ export function EbayTab({ product, draft }: EbayTabProps) {
             <Label className="text-sm">eBay Category</Label>
             <EbayCategoryPicker
               value={form.category_id}
-              onChange={(catId, catName) => {
+              onChange={(catId) => {
                 setForm((prev) => ({ ...prev, category_id: catId }));
               }}
             />
           </div>
+
           <FormField label="ePID" value={form.epid} onChange={(v) => handleChange("epid", v)}>
             {suggestedEpid && !form.epid && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -156,19 +177,27 @@ export function EbayTab({ product, draft }: EbayTabProps) {
           </FormField>
           <FormField label="Buy It Now Price" value={form.buy_it_now_price} onChange={(v) => handleChange("buy_it_now_price", v)} type="number" />
 
-          <EbayPricingPanel
+          {/* New centralised pricing dashboard */}
+          <PricingDashboard
             costPrice={Number(product.cost_price || 0)}
-            rrp={Number(product.sell_price || 0)}
-            ebayPrice={Number(form.buy_it_now_price || 0)}
-            compMedian={null}
-            defaultMarkup={30}
-            minMargin={15}
+            sellPrice={Number(form.buy_it_now_price || 0)}
+            channel="ebay"
+            taxClass={(product.tax_class as string) || "gst_included"}
+            onSuggestedPriceApply={(price) => handleChange("buy_it_now_price", price.toFixed(2))}
           />
 
           <div className="space-y-1.5">
             <Label className="text-sm">Description (HTML)</Label>
             <Textarea value={form.description_html} onChange={(e) => handleChange("description_html", e.target.value)} rows={6} placeholder="Product description..." />
           </div>
+
+          {/* Copy guardrails */}
+          <CopyGuardrails
+            title={form.title}
+            description={form.description_html}
+            ingredientsSummary={product.ingredients_summary as string}
+            product={product}
+          />
 
           <AiDescriptionGenerator productId={product.id as string} target="ebay" />
 
