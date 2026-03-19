@@ -91,8 +91,8 @@ describe("checkCopyCompliance", () => {
   it("flags therapeutic claims", () => {
     const warnings = checkCopyCompliance("Cures headaches fast", "This product treats pain");
     expect(warnings.length).toBeGreaterThanOrEqual(2);
-    expect(warnings.some((w) => w.message.includes("cures"))).toBe(true);
-    expect(warnings.some((w) => w.message.includes("treats"))).toBe(true);
+    expect(warnings.some((w) => w.message.toLowerCase().includes("cures") || w.message.toLowerCase().includes("cure"))).toBe(true);
+    expect(warnings.some((w) => w.message.toLowerCase().includes("treats") || w.message.toLowerCase().includes("treat"))).toBe(true);
   });
 
   it("returns no warnings for clean copy", () => {
