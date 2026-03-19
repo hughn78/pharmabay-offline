@@ -10,6 +10,8 @@ import {
   ShoppingCart,
   Store,
   FileText,
+  Save,
+  Eye,
 } from "lucide-react";
 import { GeneralTab } from "@/components/products/GeneralTab";
 import { EnrichmentTab } from "@/components/product-editor/EnrichmentTab";
@@ -19,14 +21,20 @@ import { ShopifyTab } from "@/components/product-editor/ShopifyTab";
 import { AuditTab } from "@/components/product-editor/AuditTab";
 import { LiveListingPanel } from "@/components/channel-imports/LiveListingPanel";
 import { ComplianceBadge } from "@/components/ui/ComplianceBadge";
+import { CompletenessIndicator } from "@/components/listing/CompletenessIndicator";
+import { MarginPill } from "@/components/pricing/PricingDashboard";
+import { AutosaveIndicator, useAutosave } from "@/components/listing/AutosaveIndicator";
+import { calculateProfitAndMargin, DEFAULT_PRICING_CONFIG } from "@/lib/pricingEngine";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useState, useMemo, useCallback, useEffect } from "react";
 
 export default function ProductEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("general");
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -96,6 +104,15 @@ export default function ProductEditor() {
     onError: (err) => toast.error("Save failed", { description: String(err) }),
   });
 
+  // Compute margin for header badge
+  const margin = useMemo(() => {
+    if (!product) return 0;
+    const cost = Number(product.cost_price || 0);
+    const sell = Number(product.sell_price || 0);
+    if (cost <= 0 || sell <= 0) return 0;
+    return calculateProfitAndMargin(sell, cost, "ebay", DEFAULT_PRICING_CONFIG).marginPercent;
+  }, [product]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -116,7 +133,8 @@ export default function ProductEditor() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
+    <div className="max-w-5xl mx-auto space-y-4 pb-20">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/products")}>
           <ArrowLeft className="h-4 w-4" />
@@ -125,16 +143,19 @@ export default function ProductEditor() {
           <h1 className="text-xl font-bold tracking-tight truncate">
             {product.source_product_name || "Untitled Product"}
           </h1>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             {product.barcode && (
               <Badge variant="outline" className="font-mono text-xs">{product.barcode}</Badge>
             )}
             <ComplianceBadge status={product.compliance_status} />
+            <CompletenessIndicator product={product as Record<string, unknown>} />
+            {margin !== 0 && <MarginPill margin={margin} />}
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="general">
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap">
           <TabsTrigger value="general" className="gap-1.5"><Package className="h-3.5 w-3.5" /> General</TabsTrigger>
           <TabsTrigger value="enrichment" className="gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Enrichment</TabsTrigger>
