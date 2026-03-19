@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Package, Search, RefreshCw, ChevronLeft, ChevronRight, Upload, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { ComplianceBadgeWithOverride } from "@/components/compliance/ComplianceBadgeWithOverride";
 import { LiveStatusBadges } from "@/components/products/LiveStatusBadges";
 import { DraftStatusBadges } from "@/components/products/DraftStatusBadges";
@@ -47,14 +47,51 @@ export default function Products() {
   const [page, setPage] = useState(0);
   const queryClient = useQueryClient();
   const exportCart = useExportCart();
+  const [isImporting, setIsImporting] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string>("updated_at");
+  const [sortAsc, setSortAsc] = useState(false);
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
+    setPage(0);
+  };
+
+  const handleImportSqlite = async () => {
+    const electronAPI = (window as any).electronAPI;
+    if (!electronAPI?.pickSqliteFile) {
+      toast.error("Electron API not available");
+      return;
+    }
+    try {
+      const pickResult = await electronAPI.pickSqliteFile();
+      if (!pickResult.data) return; // user cancelled
+
+      setIsImporting(true);
+      const importResult = await electronAPI.importSqlite(pickResult.data);
+      if (importResult.error) throw new Error(importResult.error);
+
+      toast.success(importResult.data?.message || "Import complete");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["products-count"] });
+    } catch (err: any) {
+      toast.error("Import failed", { description: err.message });
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   // Reset page when filters change
-  const queryKey = ["products", debouncedSearch, complianceFilter, page];
+  const queryKey = ["products", debouncedSearch, complianceFilter, page, sortColumn, sortAsc];
 
   // Reset to first page when search/filter changes
   useEffect(() => {
     setPage(0);
-  }, [debouncedSearch, complianceFilter]);
+  }, [debouncedSearch, complianceFilter, sortColumn, sortAsc]);
 
   const { data: complianceRules = [] } = useQuery({
     queryKey: ["compliance-rules"],
@@ -127,7 +164,7 @@ export default function Products() {
       let q = supabase
         .from("products")
         .select("*")
-        .order("updated_at", { ascending: false })
+        .order(sortColumn, { ascending: sortAsc })
         .range(from, to);
 
       if (debouncedSearch) {
@@ -141,6 +178,20 @@ export default function Products() {
       return data || [];
     },
   });
+
+  const SortableHead = ({ column, label }: { column: string; label: string }) => (
+    <TableHead
+      className="cursor-pointer select-none hover:text-foreground transition-colors"
+      onClick={() => handleSort(column)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortColumn === column && (
+          sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        )}
+      </span>
+    </TableHead>
+  );
 
   const productIds = products.map((p) => p.id);
   const { ebayMap, shopifyMap } = useProductLiveStatus(productIds);
@@ -259,10 +310,16 @@ export default function Products() {
           <h1 className="text-2xl font-bold tracking-tight">Products</h1>
           <p className="text-muted-foreground text-sm">Manage your product catalog</p>
         </div>
-        <Button size="sm" variant="outline" onClick={handleRunCompliance} disabled={isRunningCompliance}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRunningCompliance ? "animate-spin" : ""}`} />
-          Run Compliance
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={handleImportSqlite} disabled={isImporting}>
+            {isImporting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+            {isImporting ? "Importing…" : "Import SQLite"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleRunCompliance} disabled={isRunningCompliance}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRunningCompliance ? "animate-spin" : ""}`} />
+            Run Compliance
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -327,16 +384,16 @@ export default function Products() {
                       onCheckedChange={toggleAllPage}
                     />
                   </TableHead>
-                  <TableHead>Product Name</TableHead>
-                  <TableHead>Barcode</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Cost</TableHead>
-                  <TableHead>RRP</TableHead>
+                  <SortableHead column="source_product_name" label="Product Name" />
+                  <SortableHead column="barcode" label="Barcode" />
+                  <SortableHead column="brand" label="Brand" />
+                  <SortableHead column="stock_on_hand" label="Stock" />
+                  <SortableHead column="cost_price" label="Cost" />
+                  <SortableHead column="sell_price" label="RRP" />
                   <TableHead>Drafts</TableHead>
                   <TableHead>Live</TableHead>
-                  <TableHead>Compliance</TableHead>
-                  <TableHead>Enrichment</TableHead>
+                  <SortableHead column="compliance_status" label="Compliance" />
+                  <SortableHead column="enrichment_status" label="Enrichment" />
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>

@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers, Loader2, Database, Download } from "lucide-react";
+import { Settings as SettingsIcon, Store, ShoppingCart, Search, Layers, Loader2, Database, Download, Sparkles } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
@@ -73,6 +73,7 @@ export default function Settings() {
           <TabsTrigger value="google">Google</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="ai">AI</TabsTrigger>
           <TabsTrigger value="data">Data</TabsTrigger>
         </TabsList>
 
@@ -105,7 +106,11 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="data" className="mt-4">
-          <DatabaseExport />
+          <DatabaseMigration />
+        </TabsContent>
+
+        <TabsContent value="ai" className="mt-4">
+          <AiSettings />
         </TabsContent>
       </Tabs>
     </div>
@@ -273,47 +278,32 @@ function CategoryMappings() {
   );
 }
 
-function DatabaseExport() {
-  const [isExporting, setIsExporting] = useState(false);
+function DatabaseMigration() {
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [url, setUrl] = useState(import.meta.env.VITE_SUPABASE_URL || "");
+  const [key, setKey] = useState(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "");
 
-  const handleExport = async () => {
-    setIsExporting(true);
+  const handleMigration = async () => {
+    if (!url || !key) {
+      toast.error("URL and Key are required");
+      return;
+    }
+    
+    setIsMigrating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/export-sqlite`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || "Export failed");
+      const electronAPI = (window as any).electronAPI;
+      if (!electronAPI || !electronAPI.migrateData) {
+        throw new Error("Electron API not available");
       }
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `pharmabay_export_${new Date().toISOString().slice(0, 10)}.sqlite`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const res = await electronAPI.migrateData(url, key);
+      if (res.error) throw new Error(res.error);
 
-      toast.success("Database exported successfully");
+      toast.success(res.data?.message || "Migration completed successfully");
     } catch (err: any) {
-      toast.error("Export failed", { description: err.message });
+      toast.error("Migration failed", { description: err.message });
     } finally {
-      setIsExporting(false);
+      setIsMigrating(false);
     }
   };
 
@@ -321,18 +311,121 @@ function DatabaseExport() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <Database className="h-4 w-4" /> Database Export
+          <Database className="h-4 w-4" /> Import Online Database
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Export the entire database as an SQLite file. This includes all products, drafts, listings, snapshots, and settings.
+          Perform a one-time migration of your existing online Supabase data into the local SQLite database.
         </p>
-        <Button onClick={handleExport} disabled={isExporting} className="gap-2">
-          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          {isExporting ? "Exporting…" : "Export as SQLite"}
+        <div className="space-y-4 max-w-md">
+          <SettingField 
+            label="Supabase URL" 
+            value={url} 
+            onChange={setUrl} 
+            placeholder="https://xyz.supabase.co" 
+          />
+          <SettingField 
+            label="Service Role Key or Publishable Key" 
+            value={key} 
+            onChange={setKey} 
+            placeholder="eyJhbGci..." 
+            type="password"
+          />
+          <Button onClick={handleMigration} disabled={isMigrating} className="gap-2">
+            {isMigrating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {isMigrating ? "Migrating Data…" : "Start Migration"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AiSettings() {
+  const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("meta-llama/llama-4-maverick:free");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const electronAPI = (window as any).electronAPI;
+      if (!electronAPI?.getSetting) { setIsLoading(false); return; }
+      try {
+        const keyResult = await electronAPI.getSetting('openrouter_api_key');
+        if (keyResult.data) setApiKey(keyResult.data);
+        const modelResult = await electronAPI.getSetting('openrouter_model');
+        if (modelResult.data) setModel(modelResult.data);
+      } catch { }
+      setIsLoading(false);
+    };
+    loadSettings();
+  }, []);
+
+  const handleSave = async () => {
+    const electronAPI = (window as any).electronAPI;
+    if (!electronAPI?.setSetting) {
+      toast.error("Electron API not available");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await electronAPI.setSetting('openrouter_api_key', apiKey);
+      await electronAPI.setSetting('openrouter_model', model);
+      toast.success("AI settings saved");
+    } catch (err: any) {
+      toast.error("Failed to save settings", { description: err.message });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) return <div className="text-sm text-muted-foreground">Loading...</div>;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" />
+          AI / OpenRouter
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Configure your OpenRouter API key to enable AI-powered product enrichment, description generation, and market research.
+          Get your API key from{" "}
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+            openrouter.ai/keys
+          </a>
+        </p>
+        <Separator />
+        <div className="space-y-2">
+          <Label>API Key</Label>
+          <Input
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="sk-or-v1-..."
+            type="password"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Model</Label>
+          <Input
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder="meta-llama/llama-4-maverick:free"
+          />
+          <p className="text-xs text-muted-foreground">
+            Free models: meta-llama/llama-4-maverick:free, google/gemma-3-27b-it:free, qwen/qwen3-235b-a22b:free
+          </p>
+        </div>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          {isSaving ? "Saving..." : "Save AI Settings"}
         </Button>
       </CardContent>
     </Card>
   );
 }
+
