@@ -158,12 +158,50 @@ export function initDB() {
       validation_status TEXT,
       validation_errors TEXT,
       published_listing_id TEXT,
+      ebay_inventory_sku TEXT,
+      ebay_offer_id TEXT,
+      ebay_marketplace_id TEXT,
+      ebay_listing_url TEXT,
+      ebay_last_synced_at TEXT,
+      ebay_last_error TEXT,
       created_by TEXT,
       approved_by TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(product_id) REFERENCES products(id)
     );
+
+    CREATE TABLE IF NOT EXISTS ebay_publish_jobs (
+      id TEXT PRIMARY KEY,
+      product_id TEXT,
+      ebay_draft_id TEXT,
+      operation_type TEXT,
+      publish_mode TEXT,
+      request_payload TEXT,
+      response_payload TEXT,
+      publish_status TEXT,
+      error_message TEXT,
+      ebay_inventory_sku TEXT,
+      ebay_offer_id TEXT,
+      ebay_listing_id TEXT,
+      submitted_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      completed_at TEXT,
+      FOREIGN KEY(product_id) REFERENCES products(id),
+      FOREIGN KEY(ebay_draft_id) REFERENCES ebay_drafts(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS ebay_categories (
+      id TEXT PRIMARY KEY,
+      category_id TEXT,
+      category_name TEXT,
+      parent_category_id TEXT,
+      category_level INTEGER,
+      is_leaf INTEGER DEFAULT 0
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_ebay_categories_id ON ebay_categories(category_id);
+    CREATE INDEX IF NOT EXISTS idx_ebay_categories_parent ON ebay_categories(parent_category_id);
+    CREATE INDEX IF NOT EXISTS idx_ebay_categories_leaf ON ebay_categories(is_leaf);
 
     CREATE TABLE IF NOT EXISTS shopify_drafts (
       id TEXT PRIMARY KEY,

@@ -135,9 +135,15 @@ export function EbaySettings() {
 
   const fetchCategories = useMutation({
     mutationFn: async () => {
-      throw new Error("eBay category fetch is coming in a follow-up. Auth flow is ready now.");
+      const res = await window.electronAPI.ebayFetchCategories();
+      if (res.error) throw new Error(res.error);
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
     },
-    onError: (err: Error) => toast.error(err.message),
+    onSuccess: (data) => {
+      toast.success(`Imported ${data?.total ?? 0} eBay categories`);
+    },
+    onError: (err: Error) => toast.error(`Category import failed: ${err.message}`),
   });
 
   const policiesConfigured =

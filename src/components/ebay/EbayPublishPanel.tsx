@@ -6,8 +6,13 @@ import {
   Loader2, Rocket, RefreshCw, ExternalLink, CheckCircle, XCircle, AlertTriangle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+async function dbQuery(sql: string, params?: any[]) {
+  const res = await window.electronAPI.dbQuery(sql, params ?? []);
+  if (res.error) throw new Error(res.error);
+  return res.data || [];
+}
 
 interface Props {
   productId: string;
@@ -21,9 +26,7 @@ export function EbayPublishPanel({ productId, product, draft }: Props) {
   const { data: ebayStatus } = useQuery({
     queryKey: ["ebay-connection-status"],
     queryFn: async () => {
-      const res = await supabase.functions.invoke("ebay-auth", {
-        body: { action: "get_status" },
-      });
+      const res = await window.electronAPI.ebayGetStatus();
       return res.data;
     },
     staleTime: 60000,
@@ -32,13 +35,8 @@ export function EbayPublishPanel({ productId, product, draft }: Props) {
   const { data: recentJobs = [] } = useQuery({
     queryKey: ["ebay-jobs", productId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("ebay_publish_jobs")
-        .select("*")
-        .eq("product_id", productId)
-        .order("submitted_at", { ascending: false })
-        .limit(5);
-      return data || [];
+      const rows = dbQuery("SELECT * FROM ebay_publish_jobs WHERE product_id = ? ORDER BY submitted_at DESC LIMIT 5", [productId]);
+      return rows;
     },
     enabled: !!productId,
   });
@@ -46,31 +44,24 @@ export function EbayPublishPanel({ productId, product, draft }: Props) {
   const { data: approvedImages = [] } = useQuery({
     queryKey: ["ebay-approved-images", productId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("product_images")
-        .select("id")
-        .eq("product_id", productId)
-        .eq("ebay_approved", true);
-      return data || [];
+      const rows = dbQuery("SELECT id FROM product_images WHERE product_id = ? AND ebay_approved = 1", [productId]);
+      return rows;
     },
     enabled: !!productId,
   });
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      const res = await supabase.functions.invoke("ebay-inventory", {
-        body: {
-          action: "publish_product",
-          product_id: productId,
-          draft_id: draft?.id,
-        },
+      const res = await window.electronAPI.ebayPublishProduct({
+        product_id: productId,
+        draft_id: draft?.id,
       });
-      if (res.error) throw new Error(res.error.message);
+      if (res.error) throw new Error(res.error);
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
     onSuccess: (data) => {
-      toast.success(`Published to eBay! Listing ID: ${data.listingId}`);
+      toast.success(`Published to eBay! Listing ID: ${data?.listingId}`);
       queryClient.invalidateQueries({ queryKey: ["ebay-draft", productId] });
       queryClient.invalidateQueries({ queryKey: ["ebay-jobs", productId] });
     },

@@ -26,6 +26,14 @@ declare global {
       ebayTestConnection: () => Promise<{ data: { success: boolean; privileges: any } | null; error: string | null }>;
       ebaySaveSettings: (settings: Record<string, any>) => Promise<{ data: { success: boolean } | null; error: string | null }>;
       ebayGetStatus: () => Promise<{ data: { connected: boolean; status: string; username: string; environment: string; marketplace_id: string; merchant_location_key: string; fulfillment_policy_id: string; payment_policy_id: string; return_policy_id: string; ru_name: string; client_id: string; has_refresh_token: boolean; token_expires_at: string } | null; error: string | null }>;
+      ebayFetchCategories: () => Promise<{ data: { success: boolean; total: number } | null; error: string | null }>;
+      ebayPublishProduct: (body: any) => Promise<{ data: { success: boolean; listingId?: string; offerId?: string; sku?: string; listing_url?: string } | null; error: string | null }>;
+      ebayCreateInventoryItem: (body: any) => Promise<{ data: { success: boolean; sku: string } | null; error: string | null }>;
+      ebayCreateOffer: (body: any) => Promise<{ data: { success: boolean; offerId?: string } | null; error: string | null }>;
+      ebayUpdateOffer: (body: any) => Promise<{ data: { success: boolean } | null; error: string | null }>;
+      ebayPublishOffer: (body: any) => Promise<{ data: { success: boolean; listingId?: string } | null; error: string | null }>;
+      ebayGetOffer: (body: any) => Promise<{ data: { success: boolean; offer: any } | null; error: string | null }>;
+      ebayGetInventoryItem: (body: any) => Promise<{ data: { success: boolean; exists: boolean; item: any } | null; error: string | null }>;
     };
   }
 }

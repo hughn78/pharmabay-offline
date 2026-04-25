@@ -16,6 +16,14 @@ import {
   ebayTestConnection,
   ebaySaveSettings,
   ebayGetStatus,
+  ebayFetchCategories,
+  ebayPublishProduct,
+  ebayCreateInventoryItem,
+  ebayCreateOffer,
+  ebayUpdateOffer,
+  ebayPublishOffer,
+  ebayGetOffer,
+  ebayGetInventoryItem,
 } from './ebay.js';
 
 // ─── Custom protocol for BrowserRouter (must be registered before app.whenReady) ──
@@ -456,6 +464,102 @@ ipcMain.handle('ebay-save-settings', async (event, settings: Record<string, any>
 ipcMain.handle('ebay-get-status', async () => {
   try {
     const result = await ebayGetStatus();
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-fetch-categories', async () => {
+  try {
+    const result = await ebayFetchCategories();
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-publish-product', async (event, body: any) => {
+  try {
+    const result = await ebayPublishProduct(body);
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-create-inventory-item', async (event, body: any) => {
+  try {
+    const result = await ebayCreateInventoryItem(body);
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-create-offer', async (event, body: any) => {
+  try {
+    const result = await ebayCreateOffer(body);
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-update-offer', async (event, body: any) => {
+  try {
+    const result = await ebayUpdateOffer(body);
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-publish-offer', async (event, body: any) => {
+  try {
+    const result = await ebayPublishOffer(body);
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-get-offer', async (event, body: any) => {
+  try {
+    const result = await ebayGetOffer(body);
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-get-inventory-item', async (event, body: any) => {
+  try {
+    const result = await ebayGetInventoryItem(body);
     if (result.success) {
       return { data: result.data, error: null };
     }

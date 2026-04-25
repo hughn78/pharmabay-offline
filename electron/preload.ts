@@ -23,4 +23,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ebayTestConnection: () => ipcRenderer.invoke('ebay-test-connection'),
   ebaySaveSettings: (settings: any) => ipcRenderer.invoke('ebay-save-settings', settings),
   ebayGetStatus: () => ipcRenderer.invoke('ebay-get-status'),
+  ebayFetchCategories: () => ipcRenderer.invoke('ebay-fetch-categories'),
+  ebayPublishProduct: (body: any) => ipcRenderer.invoke('ebay-publish-product', body),
+  ebayCreateInventoryItem: (body: any) => ipcRenderer.invoke('ebay-create-inventory-item', body),
+  ebayCreateOffer: (body: any) => ipcRenderer.invoke('ebay-create-offer', body),
+  ebayUpdateOffer: (body: any) => ipcRenderer.invoke('ebay-update-offer', body),
+  ebayPublishOffer: (body: any) => ipcRenderer.invoke('ebay-publish-offer', body),
+  ebayGetOffer: (body: any) => ipcRenderer.invoke('ebay-get-offer', body),
+  ebayGetInventoryItem: (body: any) => ipcRenderer.invoke('ebay-get-inventory-item', body),
 });

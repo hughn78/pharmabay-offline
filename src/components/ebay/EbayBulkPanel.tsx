@@ -7,12 +7,16 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  ShoppingCart, Rocket, RefreshCw, Loader2, CheckCircle, XCircle,
-  AlertTriangle, ExternalLink,
+  ShoppingCart, Rocket, Loader2, CheckCircle, XCircle, ExternalLink,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+async function dbQuery(sql: string, params?: any[]) {
+  const res = await window.electronAPI.dbQuery(sql, params ?? []);
+  if (res.error) throw new Error(res.error);
+  return res.data || [];
+}
 
 export function EbayBulkPanel() {
   const queryClient = useQueryClient();
@@ -21,22 +25,44 @@ export function EbayBulkPanel() {
   const { data: readyDrafts = [], isLoading } = useQuery({
     queryKey: ["ebay-ready-drafts"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("ebay_drafts")
-        .select("*, products!ebay_drafts_product_id_fkey(id, source_product_name, barcode, sku, compliance_status, stock_on_hand, quantity_reserved_for_store, quantity_available_for_ebay)")
-        .in("channel_status", ["ready", "published", "failed"])
-        .order("updated_at", { ascending: false })
-        .limit(200);
-      return data || [];
+      const rows = await dbQuery(`
+        SELECT
+          ed.*,
+          p.id as p_id,
+          p.source_product_name,
+          p.barcode,
+          p.sku,
+          p.compliance_status,
+          p.stock_on_hand,
+          p.quantity_reserved_for_store,
+          p.quantity_available_for_ebay
+        FROM ebay_drafts ed
+        LEFT JOIN products p ON ed.product_id = p.id
+        WHERE ed.channel_status IN (?, ?, ?)
+        ORDER BY ed.updated_at DESC
+        LIMIT 200
+      `, ["ready", "published", "failed"]);
+
+      return rows.map((r: any) => ({
+        ...r,
+        products: r.p_id ? {
+          id: r.p_id,
+          source_product_name: r.source_product_name,
+          barcode: r.barcode,
+          sku: r.sku,
+          compliance_status: r.compliance_status,
+          stock_on_hand: r.stock_on_hand,
+          quantity_reserved_for_store: r.quantity_reserved_for_store,
+          quantity_available_for_ebay: r.quantity_available_for_ebay,
+        } : null,
+      }));
     },
   });
 
   const { data: ebayStatus } = useQuery({
     queryKey: ["ebay-connection-status"],
     queryFn: async () => {
-      const res = await supabase.functions.invoke("ebay-auth", {
-        body: { action: "get_status" },
-      });
+      const res = await window.electronAPI.ebayGetStatus();
       return res.data;
     },
     staleTime: 60000,
@@ -52,12 +78,9 @@ export function EbayBulkPanel() {
         if (!draft) continue;
 
         try {
-          const res = await supabase.functions.invoke("ebay-inventory", {
-            body: {
-              action: "publish_product",
-              product_id: draft.product_id,
-              draft_id: draft.id,
-            },
+          const res = await window.electronAPI.ebayPublishProduct({
+            product_id: draft.product_id,
+            draft_id: draft.id,
           });
           if (res.data?.error) {
             results.push({ id: draftId, status: "failed", error: res.data.error });
