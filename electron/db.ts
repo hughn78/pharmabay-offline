@@ -247,6 +247,16 @@ export function initDB() {
   `;
 
   db.exec(schema);
+
+  // Performance indexes
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
+    CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+    CREATE INDEX IF NOT EXISTS idx_products_updated_at ON products(updated_at);
+    CREATE INDEX IF NOT EXISTS idx_shopify_cache_sku ON shopify_products_cache(sku);
+    CREATE INDEX IF NOT EXISTS idx_shopify_cache_barcode ON shopify_products_cache(barcode);
+    CREATE INDEX IF NOT EXISTS idx_stock_sync_run_id ON stock_sync_items(sync_run_id);
+  `);
 }
 
 export function query(sql: string, params: any[] = []) {
