@@ -8,7 +8,7 @@ import electron from "vite-plugin-electron/simple";
 export default defineConfig(({ mode }) => ({
   base: "./",
   build: {
-    outDir: "app",
+    outDir: "dist-renderer",
   },
   server: {
     host: "::",

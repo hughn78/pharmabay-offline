@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useBeforeUnload } from "react-router-dom";
+import { useBeforeUnload, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,6 +161,7 @@ const FAILURE_MESSAGES: Record<string, { title: string; detail: string; icon: Re
 };
 
 export default function ScrapeProducts() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("configure");
 
   // Config state
@@ -937,7 +938,7 @@ export default function ScrapeProducts() {
         )}
 
         <div className="flex gap-3">
-          <Button onClick={() => window.location.assign("/products")}>View Products</Button>
+          <Button onClick={() => navigate("/products")}>View Products</Button>
           <Button variant="outline" onClick={openExportModal}>
             <Download className="mr-2 h-4 w-4" />
             Export Results

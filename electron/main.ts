@@ -1,11 +1,29 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { randomUUID } from 'node:crypto';
 import { initDB, query, db } from './db.js';
 import { runMigration } from './migrator.js';
 import Database from 'better-sqlite3';
 import { generateEnrichment } from './openrouter.js';
 import { ShopifyAdminClient, normalizeKey } from './shopify.js';
+import { createBackup, shouldRunStartupBackup } from './db-backup.js';
+import { setupAutoUpdater, checkForUpdates } from './update-check.js';
+
+// ─── Custom protocol for BrowserRouter (must be registered before app.whenReady) ──
+app.whenReady().then(() => {
+  protocol.registerFileProtocol('pharmabay', (request, callback) => {
+    const url = new URL(request.url);
+    const pathname = decodeURIComponent(url.pathname);
+    const filePath = path.join(process.resourcesPath, 'app', pathname.replace(/^\//, '') || 'index.html');
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      callback({ path: filePath });
+    } else {
+      // Fallback to index.html for SPA routes (404 → index.html)
+      callback({ path: path.join(process.resourcesPath, 'app', 'index.html') });
+    }
+  });
+});
 
 ipcMain.handle('db-query', async (event, sql, params) => {
   try {
@@ -466,10 +484,11 @@ function createWindow() {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    // In production, the 'app' folder is in extraResources
+    // BrowserRouter requires a proper origin: use a custom protocol mapped to the extraResources "app" dir.
+    const safeOrigin = 'pharmabay:app';
     const appDir = path.join(process.resourcesPath, 'app');
-    console.log('Loading from:', path.join(appDir, 'index.html'));
-    mainWindow.loadFile(path.join(appDir, 'index.html'));
+    console.log('Loading from:', `${safeOrigin}/index.html`, '(dir:', appDir + ')');
+    mainWindow.loadURL(`${safeOrigin}/index.html`);
     // Open devtools for debugging in development
     if (process.env.NODE_ENV === 'development') {
       mainWindow.webContents.openDevTools();
@@ -481,7 +500,20 @@ app.whenReady().then(() => {
   // Initialize database here to safely use app.getPath('userData')
   initDB();
 
+  // Run a startup backup once per day
+  if (shouldRunStartupBackup(app.getPath('userData'))) {
+    try {
+      createBackup(db);
+    } catch (err: any) {
+      console.error('[backup] Startup backup failed:', err.message);
+    }
+  }
+
+  setupAutoUpdater();
   createWindow();
+
+  // Defer update check so window is visible when dialog appears
+  setTimeout(() => checkForUpdates(), 3000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -492,6 +524,12 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    // Take a final backup before quitting
+    try {
+      if (db) createBackup(db);
+    } catch (err: any) {
+      console.error('[backup] Quit backup failed:', err.message);
+    }
     app.quit();
   }
 });

@@ -23,12 +23,12 @@
     },
     "files": [
       "dist-electron/**/*",
-      "app/**/*",
+      "dist-renderer/**/*",
       "package.json"
     ],
     "extraResources": [
       {
-        "from": "app",
+        "from": "dist-renderer",
         "to": "app",
         "filter": ["**/*"]
       }
@@ -75,6 +75,7 @@
     "date-fns": "^3.6.0",
     "dompurify": "^3.3.2",
     "dotenv": "^16.4.5",
+    "electron-updater": "^6.3.9",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.35.0",
     "input-otp": "^1.4.2",
