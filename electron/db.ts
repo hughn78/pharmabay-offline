@@ -111,6 +111,25 @@ export function initDB() {
       FOREIGN KEY(product_id) REFERENCES products(id)
     );
 
+    CREATE TABLE IF NOT EXISTS ebay_connections (
+      id TEXT PRIMARY KEY,
+      environment TEXT DEFAULT 'production',
+      client_id TEXT,
+      ru_name TEXT,
+      marketplace_id TEXT,
+      merchant_location_key TEXT,
+      fulfillment_policy_id TEXT,
+      payment_policy_id TEXT,
+      return_policy_id TEXT,
+      access_token TEXT,
+      access_token_expires_at TEXT,
+      refresh_token TEXT,
+      connected_username TEXT,
+      connection_status TEXT DEFAULT 'disconnected',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS ebay_drafts (
       id TEXT PRIMARY KEY,
       product_id TEXT,

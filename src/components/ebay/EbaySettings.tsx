@@ -12,7 +12,6 @@ import {
   RefreshCw, Shield, MapPin,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -22,16 +21,16 @@ export function EbaySettings() {
   const { data: status, isLoading } = useQuery({
     queryKey: ["ebay-connection-status"],
     queryFn: async () => {
-      const res = await supabase.functions.invoke("ebay-auth", {
-        body: { action: "get_status" },
-      });
-      if (res.error) throw new Error(res.error.message);
+      const res = await window.electronAPI.ebayGetStatus();
+      if (res.error) throw new Error(res.error);
       return res.data;
     },
   });
 
   const [environment, setEnvironment] = useState("production");
   const [ruName, setRuName] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [merchantLocationKey, setMerchantLocationKey] = useState("");
   const [fulfillmentPolicyId, setFulfillmentPolicyId] = useState("");
   const [paymentPolicyId, setPaymentPolicyId] = useState("");
@@ -42,6 +41,7 @@ export function EbaySettings() {
     if (status) {
       setEnvironment(status.environment || "production");
       setRuName(status.ru_name || "");
+      setClientId(status.client_id || "");
       setMerchantLocationKey(status.merchant_location_key || "");
       setFulfillmentPolicyId(status.fulfillment_policy_id || "");
       setPaymentPolicyId(status.payment_policy_id || "");
@@ -54,18 +54,17 @@ export function EbaySettings() {
 
   const saveSettings = useMutation({
     mutationFn: async () => {
-      const res = await supabase.functions.invoke("ebay-auth", {
-        body: {
-          action: "save_settings",
-          environment,
-          ru_name: ruName,
-          merchant_location_key: merchantLocationKey,
-          fulfillment_policy_id: fulfillmentPolicyId,
-          payment_policy_id: paymentPolicyId,
-          return_policy_id: returnPolicyId,
-        },
+      const res = await window.electronAPI.ebaySaveSettings({
+        environment,
+        ru_name: ruName,
+        client_id: clientId,
+        client_secret: clientSecret,
+        merchant_location_key: merchantLocationKey,
+        fulfillment_policy_id: fulfillmentPolicyId,
+        payment_policy_id: paymentPolicyId,
+        return_policy_id: returnPolicyId,
       });
-      if (res.error) throw new Error(res.error.message);
+      if (res.error) throw new Error(res.error);
       if (res.data?.error) throw new Error(res.data.error);
     },
     onSuccess: () => {
@@ -77,15 +76,13 @@ export function EbaySettings() {
 
   const startOAuth = useMutation({
     mutationFn: async () => {
-      const res = await supabase.functions.invoke("ebay-auth", {
-        body: { action: "get_auth_url" },
-      });
-      if (res.error) throw new Error(res.error.message);
+      const res = await window.electronAPI.ebayGetAuthUrl();
+      if (res.error) throw new Error(res.error);
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
     onSuccess: (data) => {
-      if (data.auth_url) {
+      if (data?.auth_url) {
         window.open(data.auth_url, "_blank", "noopener,noreferrer");
         toast.info("eBay authorization page opened. After authorizing, paste the code below.");
       }
@@ -96,10 +93,8 @@ export function EbaySettings() {
   const exchangeCode = useMutation({
     mutationFn: async () => {
       if (!authCode.trim()) throw new Error("Paste the authorization code first");
-      const res = await supabase.functions.invoke("ebay-auth", {
-        body: { action: "exchange_code", code: authCode.trim() },
-      });
-      if (res.error) throw new Error(res.error.message);
+      const res = await window.electronAPI.ebayExchangeCode(authCode.trim());
+      if (res.error) throw new Error(res.error);
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
@@ -113,10 +108,8 @@ export function EbaySettings() {
 
   const testConnection = useMutation({
     mutationFn: async () => {
-      const res = await supabase.functions.invoke("ebay-auth", {
-        body: { action: "test" },
-      });
-      if (res.error) throw new Error(res.error.message);
+      const res = await window.electronAPI.ebayTestConnection();
+      if (res.error) throw new Error(res.error);
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
@@ -127,30 +120,22 @@ export function EbaySettings() {
     onError: (err: Error) => toast.error(`Test failed: ${err.message}`),
   });
 
-  const fetchCategories = useMutation({
-    mutationFn: async () => {
-      const res = await supabase.functions.invoke("fetch-ebay-categories");
-      if (res.error) throw new Error(res.error.message);
-      if (res.data?.error) throw new Error(res.data.error);
-      return res.data;
-    },
-    onSuccess: (data) => {
-      toast.success(`Imported ${data.total} eBay categories`);
-    },
-    onError: (err: Error) => toast.error(`Category import failed: ${err.message}`),
-  });
-
   const refreshToken = useMutation({
     mutationFn: async () => {
-      const res = await supabase.functions.invoke("ebay-auth", {
-        body: { action: "refresh_token" },
-      });
-      if (res.error) throw new Error(res.error.message);
+      const res = await window.electronAPI.ebayRefreshToken();
+      if (res.error) throw new Error(res.error);
       if (res.data?.error) throw new Error(res.data.error);
     },
     onSuccess: () => {
       toast.success("Token refreshed");
       queryClient.invalidateQueries({ queryKey: ["ebay-connection-status"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const fetchCategories = useMutation({
+    mutationFn: async () => {
+      throw new Error("eBay category fetch is coming in a follow-up. Auth flow is ready now.");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -218,8 +203,28 @@ export function EbaySettings() {
             </p>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm">Client ID</Label>
+              <Input
+                placeholder="e.g. HughBlacksh-eBay-PRD-abc123..."
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Client Secret</Label>
+              <Input
+                type="password"
+                placeholder="e.g. abcdef123456..."
+                value={clientSecret}
+                onChange={(e) => setClientSecret(e.target.value)}
+              />
+            </div>
+          </div>
+
           <p className="text-xs text-muted-foreground">
-            Client ID and Client Secret are stored as secure backend secrets (EBAY_CLIENT_ID, EBAY_CLIENT_SECRET).
+            Credentials are stored locally in the Settings table (ebay_client_id, ebay_client_secret).
           </p>
 
           <div className="flex gap-2 flex-wrap">

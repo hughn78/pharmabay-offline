@@ -16,4 +16,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   shopifyRefreshProducts: () => ipcRenderer.invoke('shopify-refresh-products'),
   shopifySyncPreview: () => ipcRenderer.invoke('shopify-sync-preview'),
   shopifySyncExecute: (body: any) => ipcRenderer.invoke('shopify-sync-execute', body),
+  // eBay OAuth & API (direct — no Supabase)
+  ebayGetAuthUrl: () => ipcRenderer.invoke('ebay-get-auth-url'),
+  ebayExchangeCode: (code: string) => ipcRenderer.invoke('ebay-exchange-code', code),
+  ebayRefreshToken: () => ipcRenderer.invoke('ebay-refresh-token'),
+  ebayTestConnection: () => ipcRenderer.invoke('ebay-test-connection'),
+  ebaySaveSettings: (settings: any) => ipcRenderer.invoke('ebay-save-settings', settings),
+  ebayGetStatus: () => ipcRenderer.invoke('ebay-get-status'),
 });

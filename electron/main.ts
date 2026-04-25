@@ -9,6 +9,14 @@ import { generateEnrichment } from './openrouter.js';
 import { ShopifyAdminClient, normalizeKey } from './shopify.js';
 import { createBackup, shouldRunStartupBackup } from './db-backup.js';
 import { setupAutoUpdater, checkForUpdates } from './update-check.js';
+import {
+  ebayGetAuthUrl,
+  ebayExchangeCode,
+  ebayRefreshToken,
+  ebayTestConnection,
+  ebaySaveSettings,
+  ebayGetStatus,
+} from './ebay.js';
 
 // ─── Custom protocol for BrowserRouter (must be registered before app.whenReady) ──
 app.whenReady().then(() => {
@@ -378,6 +386,80 @@ ipcMain.handle('shopify-sync-execute', async (event, body: any) => {
     }
 
     return { data: { synced, failed, apiCalls: client.apiCallCount }, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+// ─── eBay OAuth & API IPC handlers ──────────────────────────────────────────
+
+ipcMain.handle('ebay-get-auth-url', async () => {
+  try {
+    const result = await ebayGetAuthUrl();
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-exchange-code', async (event, code: string) => {
+  try {
+    const result = await ebayExchangeCode(code);
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-refresh-token', async () => {
+  try {
+    const result = await ebayRefreshToken();
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-test-connection', async () => {
+  try {
+    const result = await ebayTestConnection();
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-save-settings', async (event, settings: Record<string, any>) => {
+  try {
+    const result = await ebaySaveSettings(settings);
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+});
+
+ipcMain.handle('ebay-get-status', async () => {
+  try {
+    const result = await ebayGetStatus();
+    if (result.success) {
+      return { data: result.data, error: null };
+    }
+    return { data: null, error: (result as any).error };
   } catch (err: any) {
     return { data: null, error: err.message };
   }

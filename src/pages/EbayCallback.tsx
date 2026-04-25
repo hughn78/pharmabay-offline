@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function EbayCallback() {
   const [searchParams] = useSearchParams();
@@ -21,10 +20,8 @@ export default function EbayCallback() {
 
     (async () => {
       try {
-        const res = await supabase.functions.invoke("ebay-auth", {
-          body: { action: "exchange_code", code },
-        });
-        if (res.error) throw new Error(res.error.message);
+        const res = await window.electronAPI.ebayExchangeCode(code);
+        if (res.error) throw new Error(res.error);
         if (res.data?.error) throw new Error(res.data.error);
         setStatus("success");
         setMessage("eBay account connected successfully! Redirecting to settings...");
