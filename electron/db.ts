@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { app } from 'electron';
+import { runMigrations } from './db-helpers.js';
 
 // Lazy-initialized to avoid calling app.getPath() before the 'app-ready' event.
 // Consumers must call initDB() once (and only once) during application startup.
@@ -257,13 +258,9 @@ export function initDB() {
     CREATE INDEX IF NOT EXISTS idx_shopify_cache_barcode ON shopify_products_cache(barcode);
     CREATE INDEX IF NOT EXISTS idx_stock_sync_run_id ON stock_sync_items(sync_run_id);
   `);
-}
 
-export function query(sql: string, params: any[] = []) {
-  if (!db) throw new Error('Database not initialized. Call initDB() first.');
-  if (sql.trim().toUpperCase().startsWith('SELECT')) {
-    return db.prepare(sql).all(...params);
-  } else {
-    return db.prepare(sql).run(...params);
-  }
+  // Run versioned migrations (idempotent — skips already-applied files)
+  const { applied, errors } = runMigrations(db);
+  if (applied > 0) console.log(`[Migrations] Applied ${applied} migration(s).`);
+  if (errors.length > 0) console.error('[Migrations] Errors:', errors);
 }

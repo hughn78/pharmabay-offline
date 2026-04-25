@@ -222,7 +222,7 @@ ipcMain.handle('shopify-sync-preview', async () => {
       if (barcode) barcodeIndex.set(barcode, item);
     }
 
-    const runId = crypto.randomUUID();
+    const runId = randomUUID();
     const now = new Date().toISOString();
     db.prepare(
       `INSERT INTO stock_sync_runs (id, started_at, status, reserve_buffer, inventory_sync_mode, max_qty_cap)
@@ -282,7 +282,7 @@ ipcMain.handle('shopify-sync-preview', async () => {
         const qtyDiff = shopifyItem != null ? (quantityToPush ?? 0) - (shopifyItem.inventory_quantity ?? 0) : null;
 
         insertItem.run(
-          crypto.randomUUID(), runId,
+          randomUUID(), runId,
           product.id,
           product.source_product_name ?? product.normalized_product_name ?? '',
           product.barcode ?? '', product.sku ?? '',
