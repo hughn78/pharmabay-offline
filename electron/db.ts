@@ -184,8 +184,67 @@ export function initDB() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS shopify_products_cache (
+      id TEXT PRIMARY KEY,
+      shopify_product_id INTEGER,
+      shopify_variant_id INTEGER,
+      title TEXT,
+      handle TEXT,
+      status TEXT,
+      vendor TEXT,
+      product_type TEXT,
+      sku TEXT,
+      barcode TEXT,
+      price TEXT,
+      inventory_item_id INTEGER,
+      inventory_quantity INTEGER,
+      variant_title TEXT,
+      body_html TEXT,
+      tags TEXT,
+      cached_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS stock_sync_runs (
+      id TEXT PRIMARY KEY,
+      started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'preview_complete',
+      reserve_buffer INTEGER DEFAULT 0,
+      inventory_sync_mode TEXT DEFAULT 'stock_minus_buffer',
+      max_qty_cap INTEGER,
+      total_items INTEGER DEFAULT 0,
+      matched INTEGER DEFAULT 0,
+      update_needed INTEGER DEFAULT 0,
+      no_match INTEGER DEFAULT 0,
+      synced INTEGER DEFAULT 0,
+      failed INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS stock_sync_items (
+      id TEXT PRIMARY KEY,
+      sync_run_id TEXT,
+      local_product_id TEXT,
+      local_product_name TEXT,
+      local_barcode TEXT,
+      local_sku TEXT,
+      local_stock_on_hand INTEGER,
+      quantity_to_push INTEGER,
+      shopify_product_id INTEGER,
+      shopify_variant_id INTEGER,
+      shopify_inventory_item_id INTEGER,
+      shopify_product_title TEXT,
+      shopify_variant_title TEXT,
+      current_shopify_qty INTEGER,
+      qty_difference INTEGER,
+      match_type TEXT,
+      match_confidence TEXT,
+      sync_status TEXT DEFAULT 'pending',
+      error_message TEXT,
+      synced_at TEXT,
+      FOREIGN KEY(sync_run_id) REFERENCES stock_sync_runs(id)
+    );
   `;
-  
+
   db.exec(schema);
 }
 

@@ -9,4 +9,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   marketResearch: (body: any) => ipcRenderer.invoke('market-research', body),
   getSetting: (key: string) => ipcRenderer.invoke('get-setting', key),
   setSetting: (key: string, value: string) => ipcRenderer.invoke('set-setting', key, value),
+
+  // Shopify Admin API (direct, no Supabase)
+  shopifyTestAuth: () => ipcRenderer.invoke('shopify-test-auth'),
+  shopifyGetLocations: () => ipcRenderer.invoke('shopify-get-locations'),
+  shopifyRefreshProducts: () => ipcRenderer.invoke('shopify-refresh-products'),
+  shopifySyncPreview: () => ipcRenderer.invoke('shopify-sync-preview'),
+  shopifySyncExecute: (body: any) => ipcRenderer.invoke('shopify-sync-execute', body),
 });
