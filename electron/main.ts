@@ -1,15 +1,11 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { randomUUID } from 'node:crypto';
 import { initDB, query, db } from './db.js';
 import { runMigration } from './migrator.js';
 import Database from 'better-sqlite3';
 import { generateEnrichment } from './openrouter.js';
 import { ShopifyAdminClient, normalizeKey } from './shopify.js';
-
-// Removed manual __filename/__dirname resolution
-
-initDB();
 
 ipcMain.handle('db-query', async (event, sql, params) => {
   try {
@@ -87,7 +83,7 @@ ipcMain.handle('market-research', async (event, body: any) => {
     db.prepare(`UPDATE products SET ${setClauses} WHERE id = ?`).run(...values, product.id);
 
     // Save research result
-    const resultId = crypto.randomUUID();
+    const resultId = randomUUID();
     db.prepare(`INSERT OR REPLACE INTO product_research_results 
       (id, product_id, research_run_id, source_domain, extracted_payload, confidence_score, fields_found, auto_filled_fields, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -474,12 +470,17 @@ function createWindow() {
     const appDir = path.join(process.resourcesPath, 'app');
     console.log('Loading from:', path.join(appDir, 'index.html'));
     mainWindow.loadFile(path.join(appDir, 'index.html'));
-    // Open devtools for debugging
-    mainWindow.webContents.openDevTools();
+    // Open devtools for debugging in development
+    if (process.env.NODE_ENV === 'development') {
+      mainWindow.webContents.openDevTools();
+    }
   }
 }
 
 app.whenReady().then(() => {
+  // Initialize database here to safely use app.getPath('userData')
+  initDB();
+
   createWindow();
 
   app.on('activate', () => {

@@ -1,14 +1,15 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { app } from 'electron';
-import fs from 'fs';
 
-// Store DB in the user data directory
-const dbPath = path.join(app.getPath('userData'), 'pharmabay.sqlite');
-const db = new Database(dbPath, { verbose: process.env.NODE_ENV === 'development' ? console.log : undefined });
+// Lazy-initialized to avoid calling app.getPath() before the 'app-ready' event.
+// Consumers must call initDB() once (and only once) during application startup.
+export let db!: Database.Database;
 
 // Basic initialization
 export function initDB() {
+  const dbPath = path.join(app.getPath('userData'), 'pharmabay.sqlite');
+  db = new Database(dbPath, { verbose: process.env.NODE_ENV === 'development' ? console.log : undefined });
   db.pragma('journal_mode = WAL');
 
   const schema = `
@@ -249,11 +250,10 @@ export function initDB() {
 }
 
 export function query(sql: string, params: any[] = []) {
+  if (!db) throw new Error('Database not initialized. Call initDB() first.');
   if (sql.trim().toUpperCase().startsWith('SELECT')) {
     return db.prepare(sql).all(...params);
   } else {
     return db.prepare(sql).run(...params);
   }
 }
-
-export { db };
